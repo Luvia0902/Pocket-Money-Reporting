@@ -37,19 +37,15 @@ export class RulesView {
                     <h4 style="color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:0.5rem; margin-bottom:1rem;">
                         ${cat} <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:normal;">(${items.length})</span>
                     </h4>
-                    <div class="transaction-list">
+                    <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                         ${items.map(m => `
-                             <div class="transaction-item">
-                                <div class="t-info">
-                                    <h4>${m.keyword}</h4>
-                                </div>
-                                <div class="text-right flex gap-2" style="align-items:center;">
-                                    ${isAdmin ? `
-                                    <button class="btn btn-outline" style="padding:0.25rem 0.5rem; color:var(--danger); border-color:transparent;" onclick="window.deleteMapping('${m.keyword}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    ` : ''}
-                                </div>
+                             <div style="display:inline-flex; align-items:center; background:#f1f5f9; padding:0.5rem 1rem; border-radius:999px; border:1px solid var(--border); font-size:0.9rem;">
+                                <span>${m.keyword}</span>
+                                ${isAdmin ? `
+                                <button onclick="window.deleteMapping('${m.keyword}')" style="background:none; border:none; color:var(--text-secondary); margin-left:0.5rem; cursor:pointer; font-size:0.8rem; padding:0 2px;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                ` : ''}
                             </div>
                         `).join('')}
                     </div>

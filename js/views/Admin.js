@@ -104,8 +104,8 @@ export class AdminView {
                     </form>
                 </div>
 
+                ${dateFilterHtml}
                 <div class="card">
-                     ${dateFilterHtml}
                      <div class="flex justify-between" style="align-items:center;">
                         <h3>員工列表</h3>
                         <button id="btn-admin-add-expense" class="btn btn-primary" style="width:auto; font-size:0.9rem;">

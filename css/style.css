@@ -1,5 +1,6 @@
 :root {
-    --primary: #2563EB; /* Professional Blue */
+    --primary: #2563EB;
+    /* Professional Blue */
     --primary-hover: #1D4ED8;
     --secondary: #64748B;
     --accent: #3B82F6;
@@ -16,6 +17,7 @@
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --radius: 0.75rem;
     --font-sans: 'Inter', 'Noto Sans TC', sans-serif;
+    --font-nums: 'Poppins', sans-serif;
 }
 
 * {
@@ -37,10 +39,11 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    max-width: 800px; /* Mobile-first optimized, but looks good on desktop centered */
+    max-width: 800px;
+    /* Mobile-first optimized, but looks good on desktop centered */
     margin: 0 auto;
     background-color: var(--surface);
-    box-shadow: 0 0 40px rgba(0,0,0,0.05);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.05);
 }
 
 /* Navbar */
@@ -81,7 +84,8 @@ body {
     font-size: 0.9rem;
 }
 
-.nav-item:hover, .nav-item.active {
+.nav-item:hover,
+.nav-item.active {
     background-color: #EFF6FF;
     color: var(--primary);
 }
@@ -187,8 +191,15 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .stat-grid {
@@ -211,6 +222,8 @@ body {
     font-weight: 700;
     color: var(--primary);
     margin-bottom: 0.25rem;
+    font-family: var(--font-nums);
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
@@ -244,10 +257,16 @@ body {
 .t-date {
     font-size: 0.75rem;
     color: var(--text-secondary);
+    font-family: var(--font-nums);
+    letter-spacing: 0.5px;
 }
 
 .t-amount {
     font-weight: 700;
+    font-family: var(--font-nums);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.1rem;
+    letter-spacing: -0.5px;
 }
 
 .badge {
@@ -257,22 +276,49 @@ body {
     font-weight: 600;
 }
 
-.badge-pending { background-color: #FEF3C7; color: #92400E; }
-.badge-approved { background-color: #D1FAE5; color: #065F46; }
+.badge-pending {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+.badge-approved {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
 
 /* Utilities */
-.hidden { display: none !important; }
-.text-right { text-align: right; }
-.flex { display: flex; }
-.justify-between { justify-content: space-between; }
-.gap-2 { gap: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
+.hidden {
+    display: none !important;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.flex {
+    display: flex;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
 
 /* Modal */
 .modal-backdrop {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;

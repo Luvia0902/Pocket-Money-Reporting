@@ -1,6 +1,8 @@
 
 import { store } from '../store.js';
+import { store } from '../store.js';
 import { formatCurrency, formatDate, generateCSV, downloadCSV } from '../utils.js';
+import { SettingsView } from './Settings.js';
 
 export class AdminView {
     constructor() {
@@ -23,6 +25,9 @@ export class AdminView {
                 <button class="btn ${this.activeTab === 'employees' ? 'btn-primary' : 'btn-outline'}" 
                     style="border-radius:var(--radius-full); padding:0.5rem 1.5rem; border:none; ${this.activeTab !== 'employees' ? 'color:var(--text-secondary); background:transparent;' : ''}"
                     data-tab="employees">員工管理</button>
+                <button class="btn ${this.activeTab === 'settings' ? 'btn-primary' : 'btn-outline'}" 
+                    style="border-radius:var(--radius-full); padding:0.5rem 1.5rem; border:none; ${this.activeTab !== 'settings' ? 'color:var(--text-secondary); background:transparent;' : ''}"
+                    data-tab="settings">雲端設定</button>
             </div>
         `;
 
@@ -192,6 +197,11 @@ export class AdminView {
         // Let's keep it simple and just implement the mapping form here as well or just link to Rules.
         // I'll render the mapping form if tab is settings.
 
+        if (this.activeTab === 'settings') {
+            const settingsView = new SettingsView();
+            content = settingsView.render();
+        }
+
         return `<div>${tabs}${content}</div>`;
     }
 
@@ -208,6 +218,11 @@ export class AdminView {
                 this.afterRender();
             });
         });
+
+        if (this.activeTab === 'settings') {
+            new SettingsView().afterRender();
+            return; // Skip other listeners if in settings
+        }
 
         // Global functions for inline onclicks (hacky but works for vanilla demo)
         window.approveExpense = (id) => {

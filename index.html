@@ -47,6 +47,26 @@
     <!-- Modals -->
     <div id="modal-container"></div>
 
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, setDoc, updateDoc, deleteDoc, doc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        window.firebaseModules = {
+            initializeApp,
+            getFirestore,
+            collection,
+            getDocs,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            doc,
+            query,
+            where,
+            writeBatch
+        };
+    </script>
+
     <!-- Scripts -->
     <script type="module" src="./js/app.js?v=3"></script>
 </body>

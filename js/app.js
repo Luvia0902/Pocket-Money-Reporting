@@ -17,7 +17,17 @@ class App {
         this.currentUser = store.getCurrentUser();
     }
 
-    init() {
+    async init() {
+        // Show loading state
+        document.getElementById('main-content').innerHTML = `
+            <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                <i class="fas fa-circle-notch fa-spin" style="font-size:3rem; color:var(--primary); margin-bottom:1rem;"></i>
+                <div style="color:var(--text-secondary);">Connecting to Secure Vault...</div>
+            </div>
+        `;
+        
+        await store.init();
+        
         this.router();
         window.addEventListener('hashchange', () => this.router());
     }

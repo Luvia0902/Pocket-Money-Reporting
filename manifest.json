@@ -1,0 +1,16 @@
+{
+    "name": "ZeroMoney",
+    "short_name": "ZeroMoney",
+    "description": "智慧報帳系統",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#0f172a",
+    "icons": [
+        {
+            "src": "icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

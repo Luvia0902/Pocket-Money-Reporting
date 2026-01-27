@@ -2,6 +2,8 @@
 const DEFAULTS = {
     users: [
         { id: 'u1', name: 'Admin User', email: 'admin@company.com', role: 'admin' },
+        { id: 'u3', name: 'Super Admin', email: 'admin@gmail.com', role: 'admin' },
+        { id: 'u4', name: 'Assistant User', email: 'assistant@company.com', role: 'assistant' },
         { id: 'u2', name: 'John Doe', email: 'john@company.com', role: 'employee' }
     ],
     mappings: [
@@ -80,6 +82,13 @@ class Store {
     init() {
         if (!localStorage.getItem('money_users')) {
             localStorage.setItem('money_users', JSON.stringify(DEFAULTS.users));
+        } else {
+            // Ensure admin@gmail.com exists
+            const users = JSON.parse(localStorage.getItem('money_users'));
+            if (!users.find(u => u.email === 'admin@gmail.com')) {
+                users.push({ id: 'u3', name: 'Super Admin', email: 'admin@gmail.com', role: 'admin' });
+                localStorage.setItem('money_users', JSON.stringify(users));
+            }
         }
         if (!localStorage.getItem('money_mappings')) {
             localStorage.setItem('money_mappings', JSON.stringify(DEFAULTS.mappings));
@@ -136,7 +145,9 @@ class Store {
 
     addUser(user) {
         const list = this.get('users');
-        list.push({ ...user, id: 'u' + Date.now() });
+        // Use existing ID if provided, otherwise generate one
+        const id = user.id || ('u' + Date.now());
+        list.push({ ...user, id });
         this.set('users', list);
     }
 
@@ -145,7 +156,16 @@ class Store {
     }
 
     loginByEmail(email) {
-        const user = this.get('users').find(u => u.email.toLowerCase() === email.toLowerCase());
+        let user = this.get('users').find(u => u.email.toLowerCase() === email.toLowerCase());
+
+        // Fail-safe: If admin@gmail.com is requested but missing (e.g. init didn't run or old data persists), create it now.
+        if (!user && email.toLowerCase() === 'admin@gmail.com') {
+            const newUser = { id: 'u3', name: 'Super Admin', email: 'admin@gmail.com', role: 'admin' };
+            this.addUser(newUser);
+            // Re-fetch to ensure we have the exact object from store
+            user = this.get('users').find(u => u.email.toLowerCase() === 'admin@gmail.com');
+        }
+
         if (user) {
             localStorage.setItem('money_current_user', JSON.stringify(user));
             window.location.hash = '/';

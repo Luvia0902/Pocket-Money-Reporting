@@ -24,36 +24,48 @@ class App {
 
     renderNavbar() {
         const nav = document.getElementById('navbar');
+        // Clean class list to ensure it matches current CSS
+        nav.className = 'floating-nav';
 
         if (!this.currentUser) {
             nav.innerHTML = `
                 <a href="#/login" class="brand">
-                    <i class="fas fa-wallet"></i>
+                    <i class="fas fa-bolt" style="color:var(--accent)"></i>
                     ZeroMoney
                 </a>
             `;
             return;
         }
 
+        // Get initials for avatar
+        const initials = this.currentUser.name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+
         nav.innerHTML = `
             <a href="#/" class="brand">
-                <i class="fas fa-wallet"></i>
-                ZeroMoney
+                <i class="fas fa-bolt" style="color:var(--accent)"></i>
+                Zero<span style="color:var(--text-main)">Money</span>
             </a>
             
-            <div class="nav-links">
-                <a href="#/" class="nav-item ${location.hash === '' || location.hash === '#/' ? 'active' : ''}">我的報帳</a>
-                <a href="#/rules" class="nav-item ${location.hash === '#/rules' ? 'active' : ''}">規則說明</a>
-                ${this.currentUser.role === 'admin' ? `<a href="#/admin" class="nav-item ${location.hash === '#/admin' ? 'active' : ''}">管理後台</a>` : ''}
-            </div>
+            <div class="nav-user">
+                ${['admin', 'assistant'].includes(this.currentUser.role)
+                ? `<a href="#/admin" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;">管理後台</a>`
+                : ''}
+                
+                <a href="#/rules" title="規則">
+                    <i class="fas fa-book" style="color:var(--text-secondary)"></i>
+                </a>
 
-            <div style="margin-left:auto; display:flex; align-items:center; gap:1rem; font-size:0.9rem;">
-                <div style="display:flex; flex-direction:column; align-items:flex-end; line-height:1.2;">
-                     <span style="font-weight:600;">${this.currentUser.name}</span>
-                     <span style="font-size:0.75rem; color:var(--text-secondary);">${this.currentUser.email}</span>
+                <div class="user-avatar" title="${this.currentUser.name}">
+                    ${initials}
                 </div>
-                <button id="btn-logout" class="btn btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">
-                    <i class="fas fa-sign-out-alt"></i> 登出
+                
+                <button id="btn-logout" class="nav-menu-btn" title="登出">
+                   <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
         `;
@@ -85,7 +97,7 @@ class App {
         const ViewClass = routes[path] || routes['/'];
 
         // Role Guard
-        if (path === '/admin' && this.currentUser && this.currentUser.role !== 'admin') {
+        if (path === '/admin' && this.currentUser && !['admin', 'assistant'].includes(this.currentUser.role)) {
             location.hash = '/';
             return;
         }

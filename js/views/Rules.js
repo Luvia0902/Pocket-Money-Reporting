@@ -54,25 +54,36 @@ export class RulesView {
         }).join('');
 
         return `
-            <div class="card">
-                <h3>關鍵字對應規則</h3>
-                <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">
-                    系統會根據商家名稱中的關鍵字自動對應類別。
-                    ${isAdmin ? '<br>由於您是管理員，您可以新增或刪除規則。' : ''}
-                </p>
+            <div class="card fade-in-up">
+                <div style="text-align:center; margin-bottom:2rem;">
+                    <h3 style="font-family:var(--font-heading); font-size:1.5rem; margin-bottom:0.5rem;">自動分類規則</h3>
+                    <p style="color:var(--text-secondary); font-size:0.95rem;">
+                        系統會掃描商家名稱，若包含以下關鍵字，將自動填入對應類別。
+                    </p>
+                </div>
                 
                 ${isAdmin ? `
-                <form id="add-mapping-form" class="flex gap-2 mb-4" style="background:#f8fafc; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-                    <input type="text" name="keyword" class="input" placeholder="關鍵字 (例如: Uber)" required>
-                    <select name="category" class="input">
-                        ${fixedCategories.map(c => `<option value="${c}">${c}</option>`).join('')}
-                    </select>
-                    <button type="submit" class="btn btn-primary" style="width: auto;">新增規則</button>
+                <form id="add-mapping-form" class="flex gap-2 mb-4" style="background:var(--background); padding:1.25rem; border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="flex:1;">
+                        <label class="label">關鍵字</label>
+                        <input type="text" name="keyword" class="input" placeholder="例如: Uber, 星巴克" required>
+                    </div>
+                    <div style="flex:1;">
+                         <label class="label">對應類別</label>
+                        <select name="category" class="input">
+                            ${fixedCategories.map(c => `<option value="${c}">${c}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:flex-end;">
+                        <button type="submit" class="btn btn-primary" style="height:46px; width:46px; border-radius:12px; padding:0; display:flex; align-items:center; justify-content:center;">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </form>
                 ` : ''}
 
                  <div class="rules-container">
-                    ${mappings.length === 0 ? '<p>尚無規則</p>' : groupsHtml}
+                    ${mappings.length === 0 ? '<p style="text-align:center; color:var(--text-secondary);">尚無規則</p>' : groupsHtml}
                  </div>
             </div>
         `;

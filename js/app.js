@@ -1,9 +1,9 @@
 
-import { store } from './store.js';
-import { ExpensesView } from './views/Expenses.js';
-import { AdminView } from './views/Admin.js';
-import { RulesView } from './views/Rules.js';
-import { LoginView } from './views/Login.js';
+import { store } from './store.js?v=3.0';
+import { ExpensesView } from './views/Expenses.js?v=3.0';
+import { AdminView } from './views/Admin.js?v=3.0';
+import { RulesView } from './views/Rules.js?v=3.0';
+import { LoginView } from './views/Login.js?v=3.0';
 
 const routes = {
     '/': ExpensesView,
@@ -25,9 +25,9 @@ class App {
                 <div style="color:var(--text-secondary);">Connecting to Secure Vault...</div>
             </div>
         `;
-        
+
         await store.init();
-        
+
         this.router();
         window.addEventListener('hashchange', () => this.router());
     }

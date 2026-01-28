@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZeroMoney | 智慧報帳</title>
+
+    <!-- Deep Debugging & Error Handler -->
+    <style>
+        #debug-console {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            z-index: 10000;
+            display: none;
+            /* Hidden by default, shown on error */
+        }
+
+        #loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: sans-serif;
+            color: #666;
+            pointer-events: none;
+            text-align: center;
+        }
+    </style>
+    <script>
+        const logs = [];
+        function log(msg) {
+            logs.push(msg);
+            const el = document.getElementById('debug-console');
+            if (el) el.textContent = logs.join('\n');
+            console.log('[DEBUG]', msg);
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('debug-console');
+            if (el) {
+                el.style.display = 'block';
+                el.textContent = logs.join('\n') + '\n\nCRITICAL ERROR:\n' + msg;
+            }
+        }
+
+        // 1. Capture Resource Loading Errors (images, scripts, styles)
+        window.addEventListener('error', function (e) {
+            if (e.target.tagName && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK' || e.target.tagName === 'IMG')) {
+                log(`RESOURCE LOAD FAIL: ${e.target.tagName} - ${e.target.src || e.target.href}`);
+                showError(`Failed to load resource: ${e.target.src || e.target.href}. Check internet connection or file path.`);
+            } else {
+                log(`JS ERROR: ${e.message} at ${e.filename}:${e.lineno}`);
+                showError(`JS ERROR: ${e.message}`);
+            }
+        }, true); // Capture phase is essential for resource errors
+
+        // 2. Unhandled Rejections (Promises)
+        window.addEventListener('unhandledrejection', function (event) {
+            log(`UNHANDLED PROMISE: ${event.reason}`);
+            showError(`Promise Error: ${event.reason}`);
+        });
+
+        // 3. Timeout Check
+        window.onload = function () {
+            log("Window loaded. Waiting for app...");
+            setTimeout(() => {
+                if (!window.firebaseModules) {
+                    log("TIMEOUT: Window.firebaseModules not found after 5s.");
+                    showError("Firebase SDK failed to load. Are you connected to the internet? (Required for Gstatic CDN)");
+                } else if (!document.querySelector('#main-content').children.length) {
+                    // Check if app rendered anything
+                    // Note: app.init() sets innerHTML of main-content. if empty, app didn't run.
+                    log("TIMEOUT: App did not render content after 5s.");
+                    showError("Application initialized but UI not rendered. Check console for logic errors.");
+                } else {
+                    log("App seems to have rendered successfully.");
+                }
+            }, 5000);
+        };
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./css/style.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/png" href="./icon.png">
+
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Background Atmosphere -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div id="app">
+        <nav id="navbar" class="floating-nav"></nav>
+        <main id="main-content" class="fade-in-up"></main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-container"></div>
+
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, setDoc, updateDoc, deleteDoc, doc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        window.firebaseModules = {
+            initializeApp,
+            getFirestore,
+            collection,
+            getDocs,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            doc,
+            query,
+            where,
+            writeBatch
+        };
+    </script>
+
+    <!-- Scripts -->
+    <script type="module" src="./js/app.js?v=3.0"></script>
+</body>
+
+</html>

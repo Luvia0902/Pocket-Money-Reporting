@@ -54,6 +54,7 @@ export class ExpensesView {
                 
                 <div id="scanner-container" class="hidden mb-4" style="background:black; border-radius:var(--radius-md); padding:1rem;">
                     <div id="reader"></div>
+                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.0</div>
                     <button id="stop-scan" class="btn btn-outline" style="margin-top:1rem; width:100%; color:white; border-color:white;">停止掃描</button>
                 </div>
 
@@ -181,40 +182,122 @@ export class ExpensesView {
                 this.html5QrcodeScanner = new Html5Qrcode("reader");
             }
 
-            this.html5QrcodeScanner.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
-                },
-                (decodedText, decodedResult) => {
-                    // Success
-                    console.log(`Scan matched: ${decodedText} `);
-                    // Parse Invoice QR (Taiwan E-Invoice format usually)
-                    // Format: 77 chars usually. 
-                    // Simple heuristic: look for date/amount if possible, else just put raw text
+            // Improved camera start logic
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    // Try to use the back camera
+                    const cameraId = devices[devices.length - 1].id; // Usually the last one is the back camera on some devices, or user 'facingMode'
 
-                    // Mock parsing for demo (assuming the text contains "Merchant,100")
-                    // Or standard Taiwan invoice format: AB1234567811101...
+                    // Use specific config
+                    const config = {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 }
+                        // aspectRatio: 1.0
+                    };
 
-                    // For this demo, let's assume the QR text is simple or we mock the parse
-                    // Real implementation needs complex parsing logic.
-                    // We will just fill merchant with "已掃描發票" and try to check length
+                    this.html5QrcodeScanner.start(
+                        { facingMode: "environment" }, // Prefer environment facing camera
+                        config,
+                        (decodedText, decodedResult) => {
+                            // Success
+                            console.log(`Scan matched: ${decodedText} `);
 
-                    document.querySelector('input[name="merchant"]').value = "掃描發票 (" + decodedText.substring(0, 5) + "...)";
-                    // random amount for demo
-                    document.querySelector('input[name="amount"]').value = Math.floor(Math.random() * 500) + 50;
-                    document.querySelector('input[name="category"]').value = store.autoCategorize("掃描發票");
+                            // Parse Taiwan E-Invoice (Left QR Code usually)
+                            // Format reference: 10(ID) + 7(Date) + 4(Random) + 8(Amount in Hex)
+                            // Validations
+                            if (decodedText.startsWith("**")) {
+                                alert("您掃描到的是「發票明細」(右側 QR Code)。\n請掃描位於「左側」的發票字軌 QR Code，通常包含日期與金額資訊。");
+                                return; // Skip processing
+                            }
 
-                    this.html5QrcodeScanner.stop().then(() => {
-                        scannerContainer.classList.add('hidden');
+                            let amount = "";
+                            let merchantName = "掃描發票 (" + decodedText.substring(0, 5) + ")";
+
+                            let totalAmountHex = "";
+                            let salesAmountHex = "";
+                            let sellerId = "";
+
+                            const knownMerchants = {
+                                "22555003": "7-11 (統一超商)",
+                                "23060248": "全家便利商店",
+                                "24556801": "萊爾富",
+                                "16740494": "全聯福利中心",
+                                "20828693": "台灣中油",
+                                "03795556": "家樂福"
+                            };
+
+                            // Basic length check for standard E-Invoice (77 chars)
+                            if (decodedText.length >= 29) {
+                                try {
+                                    // Characters 29-37 are the Total Amount (Tax Included) in Hex
+                                    if (decodedText.length >= 37) {
+                                        totalAmountHex = decodedText.substring(29, 37);
+                                        const parsedTotal = parseInt(totalAmountHex, 16);
+                                        if (!isNaN(parsedTotal) && parsedTotal > 0) {
+                                            amount = parsedTotal;
+                                        }
+                                    }
+
+                                    // Fallback: Characters 21-29 are the Sales Amount (Tax Excluded) in Hex
+                                    salesAmountHex = decodedText.substring(21, 29);
+                                    const parsedSales = parseInt(salesAmountHex, 16);
+
+                                    if (amount === "" && !isNaN(parsedSales)) {
+                                        amount = parsedSales;
+                                    }
+
+                                    // Characters 45-53 are the Seller ID (UBN)
+                                    if (decodedText.length >= 53) {
+                                        sellerId = decodedText.substring(45, 53);
+                                        if (knownMerchants[sellerId]) {
+                                            merchantName = knownMerchants[sellerId];
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn("Parse error:", e);
+                                }
+                            }
+
+                            // Debug info
+                            let debugHex = `Total:${totalAmountHex}, Sales:${salesAmountHex}, UBN:${sellerId}`;
+
+                            // Safe Set Helpers
+                            const safeSet = (name, val) => {
+                                const el = document.querySelector(`input[name="${name}"]`);
+                                if (el && val !== undefined && val !== null) el.value = val;
+                            };
+
+                            safeSet('merchant', merchantName);
+                            safeSet('amount', amount);
+                            safeSet('notes', `Raw: ${decodedText.substring(0, 40)}... [${debugHex}]`);
+                            safeSet('category', store.autoCategorize(merchantName));
+
+                            // Auto stop after scan
+                            this.html5QrcodeScanner.stop().then(() => {
+                                scannerContainer.classList.add('hidden');
+                            });
+                        },
+                        (errorMessage) => {
+                            // parse error, ignore
+                        }
+                    ).catch(err => {
+                        console.error("Error starting scanner:", err);
+                        if (err.name === 'NotAllowedError' || err.toString().includes('not allowed')) {
+                            alert("無法啟動相機：請檢查瀏覽器設定，確認已允許存取相機。\n(Error: Permission Denied)");
+                        } else {
+                            alert("無法啟動相機：" + err);
+                        }
                     });
-                },
-                (errorMessage) => {
-                    // parse error, ignore
+                } else {
+                    alert("找不到相機裝置！请確認您的裝置有相機功能。");
                 }
-            ).catch(err => {
-                alert("無法啟動相機: " + err);
+            }).catch(err => {
+                console.error("Error getting cameras:", err);
+                if (err.name === 'NotAllowedError' || err.toString().includes('not allowed')) {
+                    alert("無法取得相機權限。請重置瀏覽器權限设定。\n(Browser prevented camera access)");
+                } else {
+                    alert("無法偵測相機：" + err);
+                }
             });
         });
 

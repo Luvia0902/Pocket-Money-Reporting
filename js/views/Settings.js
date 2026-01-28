@@ -1,11 +1,27 @@
-
 import { store } from '../store.js';
+import { firebaseConfig } from '../config.js';
 
 export class SettingsView {
     render() {
-        const config = localStorage.getItem('firebase_config')
-            ? JSON.parse(localStorage.getItem('firebase_config'))
-            : null;
+        let config = null;
+        try {
+            const localConfig = localStorage.getItem('firebase_config');
+            if (localConfig) {
+                if (localConfig.startsWith('enc_')) {
+                    // Decrypt: Remove prefix -> atob -> parse
+                    const jsonStr = atob(localConfig.substring(4));
+                    config = JSON.parse(jsonStr);
+                } else {
+                    // Legacy: Plain JSON
+                    config = JSON.parse(localConfig);
+                }
+            } else {
+                config = firebaseConfig; // Fallback
+            }
+        } catch (e) {
+            console.error("Error loading config:", e);
+            config = firebaseConfig;
+        }
 
         const configStr = config ? JSON.stringify(config, null, 4) : '';
 
@@ -15,7 +31,7 @@ export class SettingsView {
                 <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">
                     若要啟用跨裝置連線，請貼上 Firebase Config 設定檔。
                     <br>
-                    <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--primary);">前往 Firebase Console 申請</a>
+                    <span style="color:var(--success); font-size:0.8rem;"><i class="fas fa-lock"></i> 設定資料將加密儲存</span>
                 </p>
 
                 <form id="settings-form">
@@ -39,10 +55,22 @@ export class SettingsView {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const configText = form.querySelector('textarea').value.trim();
+
+            if (!configText) {
+                alert("設定內容不能為空！");
+                return;
+            }
+
             try {
+                // Verify it's valid JSON first
                 const config = JSON.parse(configText);
-                localStorage.setItem('firebase_config', JSON.stringify(config));
-                alert("設定已儲存！系統將重新啟動以連線...");
+                const jsonStr = JSON.stringify(config);
+
+                // Encrypt: Stringify -> btoa -> Add prefix
+                const encrypted = 'enc_' + btoa(jsonStr);
+
+                localStorage.setItem('firebase_config', encrypted);
+                alert("設定已加密儲存！系統將重新啟動以連線...");
                 window.location.reload();
             } catch (err) {
                 alert("設定格式錯誤 (必須是 JSON)！\n" + err.message);

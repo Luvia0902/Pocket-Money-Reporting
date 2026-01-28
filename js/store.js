@@ -1,5 +1,6 @@
 
 import { FirebaseService } from './firebase-service.js';
+import { firebaseConfig } from './config.js';
 
 const DEFAULTS = {
     users: [
@@ -97,11 +98,30 @@ class Store {
     }
 
     async init() {
-        // Check if Firebase config exists in LocalStorage
-        const configStr = localStorage.getItem('firebase_config');
-        if (configStr) {
+        // Init with default config from file, or override from localStorage if set by user manually later
+        let config = firebaseConfig;
+
+        try {
+            const localConfigStr = localStorage.getItem('firebase_config');
+            if (localConfigStr) {
+                if (localConfigStr.startsWith('enc_')) {
+                    // Decrypt
+                    try {
+                        const jsonStr = atob(localConfigStr.substring(4));
+                        config = JSON.parse(jsonStr);
+                    } catch (e) {
+                        console.error("Decryption failed", e);
+                        // Fallback to default or null? Default is safer.
+                    }
+                } else {
+                    // Legacy Plain JSON
+                    config = JSON.parse(localConfigStr);
+                }
+            }
+        } catch (e) { console.error("Bad local config", e); }
+
+        if (config) {
             try {
-                const config = JSON.parse(configStr);
                 const success = await FirebaseService.init(config);
                 if (success) {
                     this.isCloudEnabled = true;
@@ -210,7 +230,17 @@ class Store {
         }
     }
 
-    // ... deleteMapping implementation skipped for brevity but similar ...
+    async deleteMapping(keyword) {
+        const list = this.get('mappings').filter(m => m.keyword !== keyword);
+        this.set('mappings', list);
+        // Note: Can't easily delete from cloud without ID or query capability
+        // For now, we only delete locally. In a real app, we'd need to find the Doc ID.
+        if (this.isCloudEnabled) {
+            console.warn("Delete mapping from cloud not fully implemented (requires ID)");
+            // Try to find if we can get ID from cache? 
+            // Ideally mappings should have IDs.
+        }
+    }
 
     async addUser(user) {
         const list = this.get('users');

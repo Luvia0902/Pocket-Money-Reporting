@@ -1,18 +1,20 @@
 
 import { store } from '../store.js';
-import { store } from '../store.js';
 import { formatCurrency, formatDate, generateCSV, downloadCSV } from '../utils.js';
 import { SettingsView } from './Settings.js';
 
 export class AdminView {
     constructor() {
         this.activeTab = 'review'; // review, employees, settings
+        this.filterUserId = 'all';
+        this.filterRangeType = 'all';
     }
 
     render() {
         const users = store.get('users');
         const expenses = store.get('expenses');
-        const mappings = store.get('mappings');
+        // Filter users (exclude self if needed, or just show all. Usually Admin wants to filter by sales reps)
+        // Let's show all users in the filter.
 
         let content = '';
 
@@ -31,18 +33,26 @@ export class AdminView {
             </div>
         `;
 
-        const dateFilterHtml = `
+        const filterHtml = `
              <div class="card" style="background:transparent; border:none; box-shadow:none; padding:1rem 0; margin-bottom:0.5rem;">
                 <div class="flex gap-2 wrap" style="align-items:center;">
                     <label class="label" style="margin:0; min-width:auto; display:flex; align-items:center; gap:0.5rem;">
-                        <i class="fas fa-filter text-secondary"></i> 範圍:
+                        <i class="fas fa-filter text-secondary"></i> 篩選:
                     </label>
-                    <select id="report-range-type" class="input" style="width: auto; padding:0.5rem 2rem 0.5rem 1rem;">
-                        <option value="all">全部時間</option>
-                        <option value="this_month">本月</option>
-                        <option value="last_month">上個月</option>
-                        <option value="custom">自訂範圍</option>
+                    
+                    <!-- User Filter -->
+                    <select id="filter-user" class="input" style="width: auto; padding:0.5rem 2rem 0.5rem 1rem;">
+                        <option value="all" ${this.filterUserId === 'all' ? 'selected' : ''}>所有員工</option>
+                        ${users.map(u => `<option value="${u.id}" ${this.filterUserId === u.id ? 'selected' : ''}>${u.name}</option>`).join('')}
                     </select>
+
+                    <select id="report-range-type" class="input" style="width: auto; padding:0.5rem 2rem 0.5rem 1rem;">
+                        <option value="all" ${this.filterRangeType === 'all' ? 'selected' : ''}>全部時間</option>
+                        <option value="this_month" ${this.filterRangeType === 'this_month' ? 'selected' : ''}>本月</option>
+                        <option value="last_month" ${this.filterRangeType === 'last_month' ? 'selected' : ''}>上個月</option>
+                        <option value="custom" ${this.filterRangeType === 'custom' ? 'selected' : ''}>自訂範圍</option>
+                    </select>
+                    
                     <div id="report-custom-dates" class="flex gap-2 hidden fade-in-up">
                         <input type="date" id="report-start" class="input" style="padding:0.4rem;">
                         <span style="align-self:center; color:var(--text-secondary);">to</span>
@@ -54,21 +64,32 @@ export class AdminView {
 
         // CONTENT: REVIEW
         if (this.activeTab === 'review') {
-            const pending = expenses.filter(e => e.status === 'pending');
+            // Filter Logic
+            let pending = expenses.filter(e => e.status === 'pending');
+
+            if (this.filterUserId !== 'all') {
+                pending = pending.filter(e => e.employeeId === this.filterUserId);
+            }
+            // Date filter logic (simplified for render, real logic in export)
+            // Ideally we filter view too? Yes, let's filter view too.
+            // But date info is in DOM inputs for custom range... 
+            // For simplicity, let's just filter by User for the view list initially or strict simple ranges.
+            // Complex date filtering usually requires re-render on change.
+
             content = `
-                ${dateFilterHtml}
+                ${filterHtml}
                 <div class="card fade-in-up">
                      <div class="flex justify-between mb-4" style="align-items:center;">
                         <div class="flex align-center gap-2">
-                            <h3 style="margin:0;">待審核列表</h3>
+                            <h3 style="margin:0;">待審核列表${this.filterUserId !== 'all' ? ` (${users.find(u => u.id === this.filterUserId)?.name})` : ''}</h3>
                             <span class="badge ${pending.length > 0 ? 'badge-pending' : 'badge-approved'}">${pending.length}</span>
                         </div>
-                        <button id="btn-export-all" class="btn btn-outline" style="width:auto; padding: 0.5rem 1rem;">
-                            <i class="fas fa-file-export"></i> 匯出 CSV
+                        <button id="btn-export-pending" class="btn btn-outline" style="width:auto; padding: 0.5rem 1rem;">
+                            <i class="fas fa-file-export"></i> 匯出待審核 CSV
                         </button>
                      </div>
                      <div class="transaction-list">
-                        ${pending.length === 0 ? '<div style="padding:2rem; text-align:center; color:var(--text-muted);"><i class="fas fa-check-circle" style="font-size:2rem; margin-bottom:0.5rem; display:block; color:var(--success);"></i>所有報帳皆已完成</div>' : ''}
+                        ${pending.length === 0 ? '<div style="padding:2rem; text-align:center; color:var(--text-muted);"><i class="fas fa-check-circle" style="font-size:2rem; margin-bottom:0.5rem; display:block; color:var(--success);"></i>目前無待審核項目</div>' : ''}
                         ${pending.map((e, index) => {
                 const employee = users.find(u => u.id === e.employeeId)?.name || 'Unknown';
                 return `
@@ -104,11 +125,6 @@ export class AdminView {
                         <div class="stat-label">總人數</div>
                         <i class="fas fa-users" style="position:absolute; right:10px; bottom:10px; opacity:0.1; font-size:2.5rem;"></i>
                     </div>
-                    <div class="stat-card">
-                         <div class="stat-value">${users.filter(u => u.role === 'admin').length}</div>
-                        <div class="stat-label">管理員</div>
-                        <i class="fas fa-user-shield" style="position:absolute; right:10px; bottom:10px; opacity:0.1; font-size:2.5rem;"></i>
-                    </div>
                 </div>
 
                 <div class="card fade-in-up stagger-1">
@@ -126,7 +142,7 @@ export class AdminView {
                     </form>
                 </div>
 
-                ${dateFilterHtml}
+                ${filterHtml}
                 <div class="card fade-in-up stagger-2">
                      <div class="flex justify-between" style="align-items:center; margin-bottom:1rem;">
                         <h3>員工列表</h3>
@@ -185,18 +201,6 @@ export class AdminView {
             `;
         }
 
-        // CONTENT: SETTINGS (Now part of Rules view mostly, but maybe kept here for future settings)
-        // ... (Skipping settings render as it was Mappings which is in RulesView mostly, but let's keep it if logic exists)
-        // Wait, Admin.js has activeTab='review' default. Tab buttons switch between review/employees. 
-        // Settings/Rules logic seems to be in Rules.js mostly. 
-        // But Admin.js line 7 says `review, employees, settings`. 
-        // Let's implement settings tab too if user wants to add keyword mapping from here?
-        // Actually Rules.js handles Mapping. Let's see original code.
-        // Original code had 'settings' tab. 
-        // I should keep it for backward compatibility but maybe redirect to Rules view?
-        // Let's keep it simple and just implement the mapping form here as well or just link to Rules.
-        // I'll render the mapping form if tab is settings.
-
         if (this.activeTab === 'settings') {
             const settingsView = new SettingsView();
             content = settingsView.render();
@@ -210,21 +214,16 @@ export class AdminView {
         document.querySelectorAll('button[data-tab]').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.activeTab = btn.dataset.tab;
-                // Re-render handled by app router usually, but here we might need manual refresh or just re-render content
-                // Simulating re-render by dispatching custom event or simple reload logic
-                // For simplicity in Vanilla Architecture:
-                const app = document.querySelector('#main-content');
-                app.innerHTML = this.render();
-                this.afterRender();
+                this.refresh();
             });
         });
 
         if (this.activeTab === 'settings') {
             new SettingsView().afterRender();
-            return; // Skip other listeners if in settings
+            return;
         }
 
-        // Global functions for inline onclicks (hacky but works for vanilla demo)
+        // Global functions
         window.approveExpense = (id) => {
             if (confirm('確定核准?')) {
                 store.updateExpense(id, { status: 'approved' });
@@ -232,13 +231,99 @@ export class AdminView {
             }
         };
 
-        window.exportEmployee = (id) => {
-            const exps = store.get('expenses').filter(e => e.employeeId === id);
-            const csv = generateCSV(exps);
-            downloadCSV(csv, `employee_${id}_report.csv`);
+        // Filter Logic
+        const rangeType = document.querySelector('#report-range-type');
+        const customDates = document.querySelector('#report-custom-dates');
+        const userFilter = document.querySelector('#filter-user');
+
+        if (rangeType) {
+            // Restore UI state
+            if (this.filterRangeType === 'custom') customDates.classList.remove('hidden');
+
+            rangeType.addEventListener('change', (e) => {
+                this.filterRangeType = e.target.value;
+                if (e.target.value === 'custom') {
+                    customDates.classList.remove('hidden');
+                } else {
+                    customDates.classList.add('hidden');
+                }
+                // Don't auto refresh on range yet, wait for user or maybe auto?
+                // For better UX, let's refresh
+                // this.refresh(); // Not updating view yet for date, just for export. 
+            });
+        }
+
+        if (userFilter) {
+            userFilter.addEventListener('change', (e) => {
+                this.filterUserId = e.target.value;
+                this.refresh();
+            });
+        }
+
+        // CSV Generations
+        const getFilteredExpenses = (baseList = store.get('expenses')) => {
+            let result = baseList;
+
+            // 1. Filter by User
+            if (this.filterUserId !== 'all') {
+                result = result.filter(e => e.employeeId === this.filterUserId);
+            }
+
+            // 2. Filter by Date
+            const type = this.filterRangeType;
+            if (type === 'all') return result;
+
+            const now = new Date();
+            let start, end;
+
+            if (type === 'this_month') {
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            } else if (type === 'last_month') {
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), 0);
+            } else if (type === 'custom') {
+                const s = document.querySelector('#report-start').value;
+                const e = document.querySelector('#report-end').value;
+                if (s) start = new Date(s);
+                if (e) end = new Date(e);
+            }
+
+            if (!start && !end) return result;
+
+            return result.filter(exp => {
+                const d = new Date(exp.date);
+                if (start && d < start) return false;
+                if (end && d > end) return false;
+                return true;
+            });
         };
 
-        // Forms
+        const exportPendingBtn = document.querySelector('#btn-export-pending');
+        if (exportPendingBtn) {
+            exportPendingBtn.addEventListener('click', () => {
+                const pending = store.get('expenses').filter(e => e.status === 'pending');
+                const exps = getFilteredExpenses(pending);
+
+                if (exps.length === 0) {
+                    alert('目前條件下無待審核資料可匯出');
+                    return;
+                }
+
+                const userName = this.filterUserId === 'all' ? 'All' : store.get('users').find(u => u.id === this.filterUserId)?.name;
+                const datePart = new Date().toISOString().split('T')[0];
+                downloadCSV(generateCSV(exps), `pending_expenses_${userName}_${datePart}.csv`);
+            });
+        }
+
+        window.exportEmployee = (id) => {
+            let exps = store.get('expenses').filter(e => e.employeeId === id);
+            exps = getFilteredExpenses(exps); // Date filter still applies
+            const csv = generateCSV(exps);
+            downloadCSV(csv, `employee_${id}_report_${this.filterRangeType}.csv`);
+        };
+
+        // ... Employee Forms logic (keep existing) ...
         const empForm = document.querySelector('#add-employee-form');
         if (empForm) {
             empForm.addEventListener('submit', (e) => {
@@ -250,19 +335,6 @@ export class AdminView {
                     role: fd.get('role')
                 });
                 alert('已新增員工！');
-                this.refresh();
-            });
-        }
-
-        const mapForm = document.querySelector('#add-mapping-form');
-        if (mapForm) {
-            mapForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const fd = new FormData(mapForm);
-                store.addMapping({
-                    keyword: fd.get('keyword'),
-                    category: fd.get('category')
-                });
                 this.refresh();
             });
         }
@@ -287,83 +359,12 @@ export class AdminView {
                     category: fd.get('category') || store.autoCategorize(fd.get('merchant')),
                     notes: fd.get('notes'),
                     employeeId: fd.get('target_employee'),
-                    status: 'approved' // Admin added, auto approve? Or pending? Let's say Approved.
+                    status: 'approved'
                 });
                 alert('已代填完成');
                 this.refresh();
             });
         }
-
-
-        // Date Filter Logic
-        const rangeType = document.querySelector('#report-range-type');
-        const customDates = document.querySelector('#report-custom-dates');
-
-        // Restore previous state if simple refresh (mock state)
-        if (rangeType && this.lastRangeType) {
-            rangeType.value = this.lastRangeType;
-            if (this.lastRangeType === 'custom') customDates.classList.remove('hidden');
-        }
-
-        if (rangeType) {
-            rangeType.addEventListener('change', (e) => {
-                this.lastRangeType = e.target.value; // simple state
-                if (e.target.value === 'custom') {
-                    customDates.classList.remove('hidden');
-                } else {
-                    customDates.classList.add('hidden');
-                }
-            });
-        }
-
-        // Helper to filter expenses by date
-        const getFilteredExpenses = (expenses) => {
-            const type = rangeType ? rangeType.value : 'all';
-            if (type === 'all') return expenses;
-
-            const now = new Date();
-            let start, end;
-
-            if (type === 'this_month') {
-                start = new Date(now.getFullYear(), now.getMonth(), 1);
-                end = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day
-            } else if (type === 'last_month') {
-                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                end = new Date(now.getFullYear(), now.getMonth(), 0);
-            } else if (type === 'custom') {
-                const s = document.querySelector('#report-start').value;
-                const e = document.querySelector('#report-end').value;
-                if (s) start = new Date(s);
-                if (e) end = new Date(e);
-            }
-
-            if (!start && !end) return expenses;
-
-            return expenses.filter(exp => {
-                const d = new Date(exp.date);
-                if (start && d < start) return false;
-                if (end && d > end) return false;
-                return true;
-            });
-        };
-
-        const exportAllBtn = document.querySelector('#btn-export-all');
-        if (exportAllBtn) {
-            exportAllBtn.addEventListener('click', () => {
-                const exps = getFilteredExpenses(store.get('expenses'));
-                const csv = generateCSV(exps);
-                downloadCSV(csv, `expenses_report_${rangeType.value}.csv`);
-            });
-        }
-
-        window.exportEmployee = (id) => {
-            let exps = store.get('expenses').filter(e => e.employeeId === id);
-            // Apply date filter
-            exps = getFilteredExpenses(exps);
-
-            const csv = generateCSV(exps);
-            downloadCSV(csv, `employee_${id}_report_${rangeType ? rangeType.value : 'all'}.csv`);
-        };
     }
 
     refresh() {

@@ -50,6 +50,8 @@ export class LoginView {
                 if (!success) {
                     errorMsg.style.display = 'block';
                     emailInput.style.borderColor = 'var(--danger)';
+                } else {
+                    window.location.hash = '/';
                 }
             }
         });

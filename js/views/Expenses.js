@@ -316,7 +316,7 @@ export class ExpensesView {
                     ).catch(err => {
                         console.error("Error starting scanner:", err);
                         if (err.name === 'NotAllowedError' || err.toString().includes('not allowed')) {
-                            alert("無法啟動相機：請檢查瀏覽器設定，確認已允許存取相機。\n(Error: Permission Denied)");
+                            alert("無法啟動相機：請檢查瀏覽器權限。\n\n⚠️ 若您正在使用 LINE 開啟，請點擊右上角選單，選擇「使用預設瀏覽器開啟」以取得完整相機權限。");
                         } else {
                             alert("無法啟動相機：" + err);
                         }
@@ -327,7 +327,7 @@ export class ExpensesView {
             }).catch(err => {
                 console.error("Error getting cameras:", err);
                 if (err.name === 'NotAllowedError' || err.toString().includes('not allowed')) {
-                    alert("無法取得相機權限。請重置瀏覽器權限设定。\n(Browser prevented camera access)");
+                    alert("無法取得相機權限。\n\n⚠️ 若您正在使用 LINE 開啟，請點擊右上角選單，選擇「使用預設瀏覽器開啟」。");
                 } else {
                     alert("無法偵測相機：" + err);
                 }

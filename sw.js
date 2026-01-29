@@ -1,15 +1,15 @@
-const CACHE_NAME = 'zeromoney-v3.24';
+const CACHE_NAME = 'zeromoney-v3.25';
 const ASSETS = [
     './',
     './index.html',
     './css/style.css',
-    './js/app.js?v=3.24',
-    './js/store.js?v=3.24',
+    './js/app.js?v=3.25',
+    './js/store.js?v=3.25',
     './js/utils.js',
     './js/firebase-service.js',
-    './js/views/Expenses.js?v=3.24',
-    './js/views/Admin.js?v=3.24',
-    './js/views/Login.js?v=3.24',
+    './js/views/Expenses.js?v=3.25',
+    './js/views/Admin.js?v=3.25',
+    './js/views/Login.js?v=3.25',
     './js/views/Settings.js',
     './manifest.json',
     './manifest.json',

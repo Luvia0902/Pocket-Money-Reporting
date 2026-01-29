@@ -54,7 +54,7 @@ export class ExpensesView {
                 
                 <div id="scanner-container" class="hidden mb-4" style="background:black; border-radius:var(--radius-md); padding:1rem;">
                     <div id="reader"></div>
-                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.0</div>
+                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.21</div>
                     <button id="stop-scan" class="btn btn-outline" style="margin-top:1rem; width:100%; color:white; border-color:white;">停止掃描</button>
                 </div>
 
@@ -218,12 +218,44 @@ export class ExpensesView {
                             let sellerId = "";
 
                             const knownMerchants = {
-                                "22555003": "7-11 (統一超商)",
-                                "23060248": "全家便利商店",
-                                "24556801": "萊爾富",
-                                "16740494": "全聯福利中心",
+                                // Utility & Government
                                 "20828693": "台灣中油",
-                                "03795556": "家樂福"
+
+                                // Convenience Stores
+                                "22555003": "7-ELEVEN",
+                                "23060248": "全家便利商店",
+                                "23285582": "萊爾富 Hi-Life",
+                                "24556801": "萊爾富", // Legacy
+                                "22853565": "OK超商",
+                                "23222509": "美廉社",
+
+                                // Supermarkets / Malls
+                                "16740494": "全聯福利中心",
+                                "22662550": "家樂福 Carrefour",
+                                "03795556": "家樂福", // Legacy
+                                "96972798": "好市多 Costco",
+
+                                // Food & Drink
+                                "12411160": "麥當勞 McDonald's",
+                                "97161500": "KFC/必勝客", // Both use same UBN (Richfood)
+                                "23928945": "摩斯漢堡 MOS",
+                                "16097091": "星巴克 Starbucks",
+                                "54857699": "路易莎 Louisa",
+
+                                // Retail / Lifestyle
+                                "23224657": "屈臣氏 Watsons",
+                                "89957386": "康是美",
+                                "97151664": "寶雅 POYA",
+                                "80518858": "無印良品 MUJI",
+                                "28965825": "UNIQLO",
+                                "23117530": "IKEA",
+
+                                // Online
+                                "83118125": "Uber Eats",
+                                "53926705": "Foodpanda",
+                                "56801904": "蝦皮購物",
+                                "27365925": "MOMO",
+                                "80136913": "PChome"
                             };
 
                             // Basic length check for standard E-Invoice (77 chars)

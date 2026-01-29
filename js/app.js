@@ -2,13 +2,9 @@
 import { store } from './store.js?v=3.22';
 import { ExpensesView } from './views/Expenses.js?v=3.22';
 import { AdminView } from './views/Admin.js?v=3.22';
-import { RulesView } from './views/Rules.js?v=3.22';
-import { LoginView } from './views/Login.js?v=3.22';
-
 const routes = {
     '/': ExpensesView,
     '/admin': AdminView,
-    '/rules': RulesView,
     '/login': LoginView
 };
 
@@ -66,9 +62,7 @@ class App {
                 ? `<a href="#/admin" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;">管理後台</a>`
                 : ''}
                 
-                <a href="#/rules" title="規則">
-                    <i class="fas fa-book" style="color:var(--text-secondary)"></i>
-                </a>
+
 
                 <div class="user-avatar" title="${this.currentUser.name}">
                     ${initials}

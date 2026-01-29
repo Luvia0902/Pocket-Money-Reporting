@@ -83,7 +83,7 @@ class App {
                 </button>
             </div>
             
-            ${this.deferredPrompt ? `
+            ${!window.matchMedia('(display-mode: standalone)').matches ? `
             <div style="position:fixed; bottom:20px; right:20px; z-index:9999; animation: bounce 2s infinite;">
                  <button id="btn-install-pwa" class="btn btn-primary" style="box-shadow: 0 4px 14px rgba(0,0,0,0.25); border-radius: 50px; padding: 0.8rem 1.5rem; display:flex; align-items:center; gap:0.5rem; font-weight:bold;">
                     <i class="fas fa-download"></i> 安裝 APP
@@ -107,7 +107,9 @@ class App {
                     const { outcome } = await this.deferredPrompt.userChoice;
                     console.log(`User response to the install prompt: ${outcome}`);
                     this.deferredPrompt = null;
-                    this.renderNavbar(); // Hide button
+                    // Don't hide button, let browser handle standalone state or user reload
+                } else {
+                    alert("若您未看到安裝視窗，請點擊瀏覽器右上角選單 (⋮) \n然後選擇「安裝應用程式」或「加到主畫面」。");
                 }
             });
         }

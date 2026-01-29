@@ -12,6 +12,7 @@ const routes = {
 class App {
     constructor() {
         this.currentUser = store.getCurrentUser();
+        this.deferredPrompt = null;
     }
 
     async init() {
@@ -27,6 +28,16 @@ class App {
 
         this.router();
         window.addEventListener('hashchange', () => this.router());
+
+        // PWA Install Prompt Listener
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            this.deferredPrompt = e;
+            // Update UI to notify the user they can add to home screen
+            this.renderNavbar();
+        });
     }
 
     renderNavbar() {
@@ -63,8 +74,6 @@ class App {
                 ? `<a href="#/admin" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;">管理後台</a>`
                 : ''}
                 
-
-
                 <div class="user-avatar" title="${this.currentUser.name}">
                     ${initials}
                 </div>
@@ -73,12 +82,33 @@ class App {
                    <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
+            
+            ${this.deferredPrompt ? `
+            <div style="position:fixed; bottom:20px; right:20px; z-index:9999; animation: bounce 2s infinite;">
+                 <button id="btn-install-pwa" class="btn btn-primary" style="box-shadow: 0 4px 14px rgba(0,0,0,0.25); border-radius: 50px; padding: 0.8rem 1.5rem; display:flex; align-items:center; gap:0.5rem; font-weight:bold;">
+                    <i class="fas fa-download"></i> 安裝 APP
+                 </button>
+            </div>
+            ` : ''}
         `;
 
         const logoutBtn = document.getElementById('btn-logout');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 store.logout();
+            });
+        }
+
+        const installBtn = document.getElementById('btn-install-pwa');
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (this.deferredPrompt) {
+                    this.deferredPrompt.prompt();
+                    const { outcome } = await this.deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
+                    this.deferredPrompt = null;
+                    this.renderNavbar(); // Hide button
+                }
             });
         }
     }

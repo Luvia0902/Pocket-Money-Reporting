@@ -54,7 +54,7 @@ export class ExpensesView {
                 
                 <div id="scanner-container" class="hidden mb-4" style="background:black; border-radius:var(--radius-md); padding:1rem;">
                     <div id="reader"></div>
-                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.33</div>
+                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.34</div>
                     <button id="stop-scan" class="btn btn-outline" style="margin-top:1rem; width:100%; color:white; border-color:white;">停止掃描</button>
                 </div>
 
@@ -111,11 +111,16 @@ export class ExpensesView {
                             </div>
                             <div class="t-info">
                                 <h4>${e.merchant}</h4>
-                                <div class="t-date">${formatDate(e.date)}</div>
+                                <div class="t-date">${formatDate(e.date)} · ${e.category}</div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right" style="display:flex; flex-direction:column; align-items:flex-end; gap:0.3rem;">
                                 <div class="t-amount">${formatCurrency(e.amount)}</div>
-                                <span class="badge badge-${e.status}">${e.status === 'approved' ? '已核准' : '審核中'}</span>
+                                ${e.status === 'pending' ?
+                            `<button class="btn btn-primary btn-approve" data-id="${e.id}" style="padding:0.25rem 0.6rem; font-size:0.75rem; border-radius:var(--radius-full);">
+                                        <i class="fas fa-check"></i> 核准
+                                    </button>` :
+                            `<span class="badge badge-approved">已核准</span>`
+                        }
                             </div>
                         </div>
                     `).join('')}
@@ -186,6 +191,17 @@ export class ExpensesView {
             form.reset();
             form.classList.add('hidden');
             window.location.reload(); // Simple refresh for state update
+        });
+
+        // Self-Approve Logic
+        document.querySelectorAll('.btn-approve').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                if (confirm('確定要核准這筆報帳嗎？')) {
+                    store.updateExpense(id, { status: 'approved' });
+                    window.location.reload();
+                }
+            });
         });
 
         // Scanner Logic

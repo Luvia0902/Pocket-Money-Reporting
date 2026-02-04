@@ -25,6 +25,21 @@ export class ExpensesView {
             return 'fa-receipt';
         };
 
+        this.getCategoryOptions = () => {
+            try {
+                const mappings = store.get('mappings') || [];
+                const categories = mappings.map(m => m.category).filter(Boolean);
+                const uniquecats = [...new Set(categories), '其他'];
+
+                return uniquecats
+                    .map(c => `<option value="${c}">${c}</option>`)
+                    .join('');
+            } catch (e) {
+                console.error("Error generating categories:", e);
+                return '<option value="其他">其他</option>';
+            }
+        };
+
         return `
             <div class="stat-grid">
                 <div class="stat-card">
@@ -89,10 +104,7 @@ export class ExpensesView {
                         <div style="position:relative;">
                             <select name="category" class="input" required>
                                 <option value="" disabled selected>請選擇或輸入商家自動帶入...</option>
-                                ${[...new Set(store.get('mappings').map(m => m.category)), '其他']
-                .filter((v, i, a) => a.indexOf(v) === i) // Ensure unique including '其他'
-                .map(c => `<option value="${c}">${c}</option>`)
-                .join('')}
+                                ${this.getCategoryOptions()}
                             </select>
                             <i class="fas fa-magic" style="position:absolute; right:35px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted); opacity:0.5;"></i>
                             <i class="fas fa-chevron-down" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted);"></i>

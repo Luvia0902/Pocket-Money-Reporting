@@ -1,8 +1,8 @@
 
-import { store } from './store.js?v=3.34';
-import { ExpensesView } from './views/Expenses.js?v=3.34';
-import { AdminView } from './views/Admin.js?v=3.34';
-import { LoginView } from './views/Login.js?v=3.34';
+import { store } from './store.js?v=3.35';
+import { ExpensesView } from './views/Expenses.js?v=3.35';
+import { AdminView } from './views/Admin.js?v=3.35';
+import { LoginView } from './views/Login.js?v=3.35';
 const routes = {
     '/': ExpensesView,
     '/admin': AdminView,

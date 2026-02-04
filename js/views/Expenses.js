@@ -49,12 +49,15 @@ export class ExpensesView {
                         <button id="btn-manual" class="btn btn-outline" style="padding:0.6rem 1rem;">
                             <i class="fas fa-pen"></i>
                         </button>
+                        <button id="btn-clear-cache" class="btn btn-outline" style="padding:0.6rem 1rem; color:var(--text-secondary); border-color:var(--border);" title="清除快取 / 修復更新">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
                 
                 <div id="scanner-container" class="hidden mb-4" style="background:black; border-radius:var(--radius-md); padding:1rem;">
                     <div id="reader"></div>
-                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.34</div>
+                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.35</div>
                     <button id="stop-scan" class="btn btn-outline" style="margin-top:1rem; width:100%; color:white; border-color:white;">停止掃描</button>
                 </div>
 
@@ -101,7 +104,7 @@ export class ExpensesView {
             </div>
 
             <div class="card fade-in-up stagger-2">
-                <h3 style="font-family:var(--font-heading); font-size:1.2rem; margin-bottom:1rem;">最近紀錄</h3>
+                <h3 style="font-family:var(--font-heading); font-size:1.2rem; margin-bottom:1rem;">報帳記錄</h3>
                 <div class="transaction-list">
                     ${expenses.length === 0 ? '<div style="text-align:center; padding:2rem; color:var(--text-muted);"><i class="fas fa-receipt" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>尚無紀錄</div>' : ''}
                     ${expenses.map((e, index) => `
@@ -116,9 +119,14 @@ export class ExpensesView {
                             <div class="text-right" style="display:flex; flex-direction:column; align-items:flex-end; gap:0.3rem;">
                                 <div class="t-amount">${formatCurrency(e.amount)}</div>
                                 ${e.status === 'pending' ?
-                            `<button class="btn btn-primary btn-approve" data-id="${e.id}" style="padding:0.25rem 0.6rem; font-size:0.75rem; border-radius:var(--radius-full);">
-                                        <i class="fas fa-check"></i> 核准
-                                    </button>` :
+                            `<div class="flex gap-1">
+                                        <button class="btn btn-outline btn-delete" data-id="${e.id}" style="padding:0.25rem 0.6rem; font-size:0.75rem; border-radius:var(--radius-full); color:var(--text-secondary); border-color:var(--border);">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <button class="btn btn-primary btn-approve" data-id="${e.id}" style="padding:0.25rem 0.6rem; font-size:0.75rem; border-radius:var(--radius-full);">
+                                            <i class="fas fa-check"></i> 核准
+                                        </button>
+                                     </div>` :
                             `<span class="badge badge-approved">已核准</span>`
                         }
                             </div>
@@ -158,6 +166,18 @@ export class ExpensesView {
                 this.html5QrcodeScanner = null;
             }
         });
+
+        // Clear Cache / Reset App
+        const clearCacheBtn = document.querySelector('#btn-clear-cache');
+        if (clearCacheBtn) {
+            clearCacheBtn.addEventListener('click', () => {
+                if (window.resetApp) {
+                    window.resetApp();
+                } else {
+                    alert('無法找到重置功能 (resetApp)');
+                }
+            });
+        }
 
         // Auto-Categorize logic (updates select dropdown)
         merchantInput.addEventListener('input', (e) => {
@@ -199,6 +219,18 @@ export class ExpensesView {
                 const id = btn.dataset.id;
                 if (confirm('確定要核准這筆報帳嗎？')) {
                     store.updateExpense(id, { status: 'approved' });
+                    window.location.reload();
+                }
+            });
+        });
+
+        // Delete Logic
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                if (confirm('確定要刪除這筆報帳記錄嗎？')) {
+                    store.deleteExpense(id);
+                    // Simple refresh for state update
                     window.location.reload();
                 }
             });

@@ -152,8 +152,13 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW registered!', reg))
+                // Force update by adding version query
+                navigator.serviceWorker.register('./sw.js?v=3.35')
+                    .then(reg => {
+                        console.log('SW registered!', reg);
+                        // Trigger update check immediately
+                        reg.update();
+                    })
                     .catch(err => console.log('SW registration failed:', err));
             });
         }
@@ -212,7 +217,7 @@
     </script>
 
     <!-- Scripts -->
-    <script type="module" src="./js/app.js?v=3.34"></script>
+    <script type="module" src="./js/app.js?v=3.35"></script>
 </body>
 
 </html>

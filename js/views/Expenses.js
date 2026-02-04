@@ -85,8 +85,18 @@ export class ExpensesView {
                         <input type="number" name="amount" class="input" placeholder="0" required>
                     </div>
                     <div class="input-group">
-                        <label class="label">類別 (自動帶入)</label>
-                        <input type="text" name="category" class="input" placeholder="自動判斷..." readonly style="background-color: #f1f5f9;">
+                        <label class="label">類別</label>
+                        <div style="position:relative;">
+                            <select name="category" class="input" required>
+                                <option value="" disabled selected>請選擇或輸入商家自動帶入...</option>
+                                ${[...new Set(store.get('mappings').map(m => m.category)), '其他']
+                .filter((v, i, a) => a.indexOf(v) === i) // Ensure unique including '其他'
+                .map(c => `<option value="${c}">${c}</option>`)
+                .join('')}
+                            </select>
+                            <i class="fas fa-magic" style="position:absolute; right:35px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted); opacity:0.5;"></i>
+                            <i class="fas fa-chevron-down" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted);"></i>
+                        </div>
                     </div>
                     <div class="input-group">
                         <label class="label">備註</label>
@@ -143,7 +153,7 @@ export class ExpensesView {
         merchantInput.addEventListener('input', (e) => {
             const val = e.target.value;
             const cat = store.autoCategorize(val);
-            document.querySelector('input[name="category"]').value = cat;
+            document.querySelector('[name="category"]').value = cat;
         });
 
         // Form Submit
@@ -296,7 +306,7 @@ export class ExpensesView {
 
                             // Safe Set Helpers
                             const safeSet = (name, val) => {
-                                const el = document.querySelector(`input[name="${name}"]`);
+                                const el = document.querySelector(`[name="${name}"]`);
                                 if (el && val !== undefined && val !== null) el.value = val;
                             };
 

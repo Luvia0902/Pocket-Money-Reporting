@@ -1,8 +1,8 @@
 
-import { store } from './store.js?v=3.35';
-import { ExpensesView } from './views/Expenses.js?v=3.35';
-import { AdminView } from './views/Admin.js?v=3.35';
-import { LoginView } from './views/Login.js?v=3.35';
+import { store } from './store.js?v=3.37';
+import { ExpensesView } from './views/Expenses.js?v=3.37';
+import { AdminView } from './views/Admin.js?v=3.37';
+import { LoginView } from './views/Login.js?v=3.37';
 const routes = {
     '/': ExpensesView,
     '/admin': AdminView,
@@ -84,7 +84,7 @@ class App {
             </div>
             
             ${!window.matchMedia('(display-mode: standalone)').matches ? `
-            <div style="position:fixed; bottom:20px; right:20px; z-index:9999; animation: bounce 2s infinite;">
+            <div style="position:fixed; bottom:20px; left:20px; z-index:9999; animation: bounce 2s infinite;">
                  <button id="btn-install-pwa" class="btn btn-primary" style="box-shadow: 0 4px 14px rgba(0,0,0,0.25); border-radius: 50px; padding: 0.8rem 1.5rem; display:flex; align-items:center; gap:0.5rem; font-weight:bold;">
                     <i class="fas fa-download"></i> 安裝 APP
                  </button>

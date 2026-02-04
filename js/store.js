@@ -79,16 +79,22 @@ const DEFAULTS = {
 class Store {
     constructor() {
         // Initialize in-memory state from local storage or defaults immediately for fast TTI
+        const storedMappings = JSON.parse(localStorage.getItem('money_mappings') || '[]');
+
         this.state = {
             users: JSON.parse(localStorage.getItem('money_users')) || DEFAULTS.users,
-            mappings: JSON.parse(localStorage.getItem('money_mappings')) || DEFAULTS.mappings,
+            // Use stored mappings only if it has data, otherwise use defaults
+            mappings: (storedMappings && storedMappings.length > 0) ? storedMappings : DEFAULTS.mappings,
             expenses: JSON.parse(localStorage.getItem('money_expenses')) || DEFAULTS.expenses,
         };
         this.isCloudEnabled = false;
 
-        // Ensure defaults are saved if first run
+        // Ensure defaults are saved if first run or if mappings was empty
         if (!localStorage.getItem('money_users')) this.saveToLocal('users', this.state.users);
-        if (!localStorage.getItem('money_mappings')) this.saveToLocal('mappings', this.state.mappings);
+        if (!localStorage.getItem('money_mappings') || storedMappings.length === 0) {
+            this.saveToLocal('mappings', DEFAULTS.mappings);
+            this.state.mappings = DEFAULTS.mappings;
+        }
         if (!localStorage.getItem('money_expenses')) this.saveToLocal('expenses', this.state.expenses);
 
         // Ensure admin@gmail.com exists locally immediately

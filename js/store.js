@@ -1,6 +1,8 @@
 
 import { FirebaseService } from './firebase-service.js';
-import { firebaseConfig } from './config.js';
+
+// Fallback config - actual config loaded from localStorage or dynamically in init()
+let firebaseConfig = null;
 
 const DEFAULTS = {
     users: [
@@ -98,6 +100,17 @@ class Store {
     }
 
     async init() {
+        // Try to dynamically import config.js (may not exist in PWA/production)
+        if (!firebaseConfig) {
+            try {
+                const configModule = await import('./config.js');
+                firebaseConfig = configModule.firebaseConfig;
+                console.log('[Store] Loaded config.js');
+            } catch (e) {
+                console.warn('[Store] config.js not found, will use localStorage config only');
+            }
+        }
+
         // Init with default config from file, or override from localStorage if set by user manually later
         let config = firebaseConfig;
 

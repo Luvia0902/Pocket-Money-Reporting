@@ -1,5 +1,7 @@
 import { store } from '../store.js';
-import { firebaseConfig } from '../config.js';
+
+// Note: config.js may not exist in production/PWA, so we don't import it directly
+// Firebase config is managed via localStorage
 
 export class SettingsView {
     render() {
@@ -15,12 +17,11 @@ export class SettingsView {
                     // Legacy: Plain JSON
                     config = JSON.parse(localConfig);
                 }
-            } else {
-                config = firebaseConfig; // Fallback
             }
+            // If no localStorage config, config remains null (user needs to set it)
         } catch (e) {
             console.error("Error loading config:", e);
-            config = firebaseConfig;
+            config = null;
         }
 
         const configStr = config ? JSON.stringify(config, null, 4) : '';

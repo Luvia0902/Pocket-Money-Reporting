@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zeromoney-v3.26';
+const CACHE_NAME = 'zeromoney-v3.27';
 const ASSETS = [
     './',
     './index.html',

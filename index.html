@@ -159,8 +159,60 @@
         }
     </script>
 
+    <!-- Emergency Reset Button (Hidden by default, shown on error/timeout) -->
+    <div id="emergency-reset"
+        style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:99999; background:rgba(220, 38, 38, 0.95); color:white; padding:12px 24px; border-radius:50px; font-weight:bold; cursor:pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5); white-space:nowrap; animation: pulse 2s infinite;"
+        onclick="resetApp()">
+        <i class="fas fa-wrench"></i> 應用程式無法開啟？點此修復
+    </div>
+
+    <script>
+        async function resetApp() {
+            if (confirm('這將清除快取並重新下載最新版本，嘗試修復白畫面問題。\n\n確定要繼續嗎？')) {
+                const btn = document.getElementById('emergency-reset');
+                btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> 修復中...';
+
+                try {
+                    // 1. Unregister Service Worker
+                    if ('serviceWorker' in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (let registration of registrations) {
+                            await registration.unregister();
+                            console.log('SW Unregistered');
+                        }
+                    }
+
+                    // 2. Clear All Caches
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        for (const key of keys) {
+                            await caches.delete(key);
+                            console.log('Cache Deleted:', key);
+                        }
+                    }
+
+                    alert('修復完成！即將重新載入 APP。');
+                    window.location.reload(true);
+                } catch (e) {
+                    alert('修復失敗，請嘗試手動移除 APP 再重新安裝。\n錯誤: ' + e);
+                }
+            }
+        }
+
+        // Show reset button if app doesn't load in 3 seconds
+        setTimeout(() => {
+            const appContent = document.querySelector('#main-content');
+            // If main content is empty or app hasn't flagged readiness
+            if (!appContent || !appContent.innerHTML.trim() || document.getElementById('loading-indicator')) {
+                const btn = document.getElementById('emergency-reset');
+                if (btn) btn.style.display = 'block';
+                console.log('Emergency reset button shown due to timeout');
+            }
+        }, 3000);
+    </script>
+
     <!-- Scripts -->
-    <script type="module" src="./js/app.js?v=3.26"></script>
+    <script type="module" src="./js/app.js?v=3.27"></script>
 </body>
 
 </html>

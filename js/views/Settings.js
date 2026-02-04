@@ -46,6 +46,17 @@ export class SettingsView {
                     </div>
                 </form>
             </div>
+            
+            <div class="card fade-in-up" style="margin-top:1rem;">
+                <h3>版本管理</h3>
+                <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">
+                    目前版本：<strong id="current-version">檢測中...</strong>
+                    <br><span style="font-size:0.8rem;">若版本過舊或功能異常，請點擊下方按鈕強制更新。</span>
+                </p>
+                <button id="btn-force-update" class="btn btn-primary" style="width:100%;">
+                    <i class="fas fa-sync-alt"></i> 強制更新版本
+                </button>
+            </div>
         `;
     }
 
@@ -83,6 +94,52 @@ export class SettingsView {
                 localStorage.removeItem('firebase_config');
                 alert("設定已清除。");
                 window.location.reload();
+            }
+        });
+
+        // Version management
+        const versionEl = document.querySelector('#current-version');
+        const forceUpdateBtn = document.querySelector('#btn-force-update');
+
+        // Try to get version from manifest
+        fetch('./manifest.json?nocache=' + Date.now())
+            .then(r => r.json())
+            .then(data => {
+                versionEl.textContent = 'v' + (data.version || '未知');
+            })
+            .catch(() => {
+                versionEl.textContent = '無法取得';
+            });
+
+        forceUpdateBtn.addEventListener('click', async () => {
+            if (confirm('這將清除所有快取並下載最新版本。\n\n確定要繼續嗎？')) {
+                forceUpdateBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> 更新中...';
+                forceUpdateBtn.disabled = true;
+
+                try {
+                    // 1. Unregister Service Worker
+                    if ('serviceWorker' in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (let registration of registrations) {
+                            await registration.unregister();
+                        }
+                    }
+
+                    // 2. Clear All Caches
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        for (const key of keys) {
+                            await caches.delete(key);
+                        }
+                    }
+
+                    alert('更新完成！即將重新載入 APP。');
+                    window.location.reload(true);
+                } catch (e) {
+                    alert('更新失敗：' + e);
+                    forceUpdateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 強制更新版本';
+                    forceUpdateBtn.disabled = false;
+                }
             }
         });
     }

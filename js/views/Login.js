@@ -30,7 +30,7 @@ export class LoginView {
                     </form>
 
                     <div style="margin-top: 2rem; text-align: center; font-size: 0.9rem; color: var(--text-secondary); opacity: 0.8;">
-                        Protected by Company Policy v3.31
+                        Protected by Company Policy v3.32
                     </div>
                 </div>
             </div>`;

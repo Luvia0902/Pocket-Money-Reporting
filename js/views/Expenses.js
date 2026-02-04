@@ -54,7 +54,7 @@ export class ExpensesView {
                 
                 <div id="scanner-container" class="hidden mb-4" style="background:black; border-radius:var(--radius-md); padding:1rem;">
                     <div id="reader"></div>
-                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.32</div>
+                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.33</div>
                     <button id="stop-scan" class="btn btn-outline" style="margin-top:1rem; width:100%; color:white; border-color:white;">停止掃描</button>
                 </div>
 
@@ -85,8 +85,10 @@ export class ExpensesView {
                         <input type="number" name="amount" class="input" placeholder="0" required>
                     </div>
                     <div class="input-group">
-                        <label class="label">類別 (自動帶入)</label>
-                        <input type="text" name="category" class="input" placeholder="自動判斷..." readonly style="background-color: #f1f5f9;">
+                        <label class="label">類別 <span style="font-size:0.8rem; color:var(--text-muted);">(自動帶入，可手動修改)</span></label>
+                        <select name="category" class="input" required>
+                            <option value="">請選擇類別...</option>
+                        </select>
                     </div>
                     <div class="input-group">
                         <label class="label">備註</label>
@@ -128,6 +130,19 @@ export class ExpensesView {
         const scanBtn = document.querySelector('#btn-scan');
         const scannerContainer = document.querySelector('#scanner-container');
         const merchantInput = document.querySelector('input[name="merchant"]');
+        const categorySelect = document.querySelector('select[name="category"]');
+
+        // Populate category options from mappings
+        const mappings = store.get('mappings') || [];
+        const categories = [...new Set(mappings.map(m => m.category).filter(Boolean))];
+        categories.push('其他'); // Always include "其他" as fallback
+
+        categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            categorySelect.appendChild(option);
+        });
 
         // Toggle Manual Form
         manualBtn.addEventListener('click', () => {
@@ -139,11 +154,11 @@ export class ExpensesView {
             }
         });
 
-        // Auto-Categorize logic
+        // Auto-Categorize logic (updates select dropdown)
         merchantInput.addEventListener('input', (e) => {
             const val = e.target.value;
             const cat = store.autoCategorize(val);
-            document.querySelector('input[name="category"]').value = cat;
+            categorySelect.value = cat;
         });
 
         // Form Submit
@@ -296,7 +311,9 @@ export class ExpensesView {
 
                             // Safe Set Helpers
                             const safeSet = (name, val) => {
-                                const el = document.querySelector(`input[name="${name}"]`);
+                                // Try input first, then select
+                                let el = document.querySelector(`input[name="${name}"]`);
+                                if (!el) el = document.querySelector(`select[name="${name}"]`);
                                 if (el && val !== undefined && val !== null) el.value = val;
                             };
 

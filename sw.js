@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zeromoney-v3.35';
+const CACHE_NAME = 'zeromoney-v3.36';
 const ASSETS = [
     './',
     './index.html',
@@ -35,7 +35,7 @@ self.addEventListener('activate', event => {
         caches.keys().then(keys => {
             return Promise.all(keys.map(key => {
                 if (key !== CACHE_NAME) {
-                    console.log('[SW] Clearing old cache:', key);
+                    // Scanner System v3.36
                     return caches.delete(key);
                 }
             }));

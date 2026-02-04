@@ -153,7 +153,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Force update by adding version query
-                navigator.serviceWorker.register('./sw.js?v=3.35')
+                navigator.serviceWorker.register('./sw.js?v=3.36')
                     .then(reg => {
                         console.log('SW registered!', reg);
                         // Trigger update check immediately
@@ -217,7 +217,7 @@
     </script>
 
     <!-- Scripts -->
-    <script type="module" src="./js/app.js?v=3.35"></script>
+    <script type="module" src="./js/app.js?v=3.36"></script>
 </body>
 
 </html>

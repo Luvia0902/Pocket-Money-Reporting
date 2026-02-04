@@ -25,21 +25,6 @@ export class ExpensesView {
             return 'fa-receipt';
         };
 
-        this.getCategoryOptions = () => {
-            try {
-                const mappings = store.get('mappings') || [];
-                const categories = mappings.map(m => m.category).filter(Boolean);
-                const uniquecats = [...new Set(categories), '其他'];
-
-                return uniquecats
-                    .map(c => `<option value="${c}">${c}</option>`)
-                    .join('');
-            } catch (e) {
-                console.error("Error generating categories:", e);
-                return '<option value="其他">其他</option>';
-            }
-        };
-
         return `
             <div class="stat-grid">
                 <div class="stat-card">
@@ -100,15 +85,8 @@ export class ExpensesView {
                         <input type="number" name="amount" class="input" placeholder="0" required>
                     </div>
                     <div class="input-group">
-                        <label class="label">類別</label>
-                        <div style="position:relative;">
-                            <select name="category" class="input" required>
-                                <option value="" disabled selected>請選擇或輸入商家自動帶入...</option>
-                                ${this.getCategoryOptions()}
-                            </select>
-                            <i class="fas fa-magic" style="position:absolute; right:35px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted); opacity:0.5;"></i>
-                            <i class="fas fa-chevron-down" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted);"></i>
-                        </div>
+                        <label class="label">類別 (自動帶入)</label>
+                        <input type="text" name="category" class="input" placeholder="自動判斷..." readonly style="background-color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label class="label">備註</label>
@@ -165,7 +143,7 @@ export class ExpensesView {
         merchantInput.addEventListener('input', (e) => {
             const val = e.target.value;
             const cat = store.autoCategorize(val);
-            document.querySelector('[name="category"]').value = cat;
+            document.querySelector('input[name="category"]').value = cat;
         });
 
         // Form Submit
@@ -318,7 +296,7 @@ export class ExpensesView {
 
                             // Safe Set Helpers
                             const safeSet = (name, val) => {
-                                const el = document.querySelector(`[name="${name}"]`);
+                                const el = document.querySelector(`input[name="${name}"]`);
                                 if (el && val !== undefined && val !== null) el.value = val;
                             };
 

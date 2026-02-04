@@ -54,7 +54,7 @@ export class ExpensesView {
                 
                 <div id="scanner-container" class="hidden mb-4" style="background:black; border-radius:var(--radius-md); padding:1rem;">
                     <div id="reader"></div>
-                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.25</div>
+                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.31</div>
                     <button id="stop-scan" class="btn btn-outline" style="margin-top:1rem; width:100%; color:white; border-color:white;">停止掃描</button>
                 </div>
 

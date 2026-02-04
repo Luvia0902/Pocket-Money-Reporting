@@ -46,7 +46,7 @@ const DEFAULTS = {
         { keyword: '早餐', category: '伙食費' },
         { keyword: '小吃', category: '伙食費' },
         { keyword: '滷肉飯', category: '伙食費' },
-        { keyword: '7-11', category: '伙食費' },
+        { keyword: '7-11', category: '交際費' },
         { keyword: '全家', category: '伙食費' },
         // 文具用品
         { keyword: '書局', category: '文具用品' },

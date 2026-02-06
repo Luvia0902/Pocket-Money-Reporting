@@ -97,11 +97,35 @@ class Store {
         }
         if (!localStorage.getItem('money_expenses')) this.saveToLocal('expenses', this.state.expenses);
 
-        // Ensure admin@gmail.com exists locally immediately
-        if (!this.state.users.find(u => u.email === 'admin@gmail.com')) {
-            const admin = { id: 'u3', name: 'Super Admin', email: 'admin@gmail.com', role: 'admin' };
-            this.state.users.push(admin);
+        // Ensure critical users exist immediately
+        this.ensureCriticalUsers();
+    }
+
+    ensureCriticalUsers() {
+        const requiredUsers = [
+            { id: 'u3', name: 'Super Admin', email: 'admin@gmail.com', role: 'admin' },
+            { id: 'u_dejau', name: 'Dejau Chu', email: 'dejau.chu@gmail.com', role: 'admin' }
+        ];
+
+        let changed = false;
+        for (const req of requiredUsers) {
+            if (!this.state.users.find(u => u.email.toLowerCase() === req.email.toLowerCase())) {
+                this.state.users.push(req);
+                changed = true;
+            }
+        }
+
+        if (changed) {
             this.saveToLocal('users', this.state.users);
+            // If cloud is enabled, we should probably try to sync these UP too, 
+            // but we can't await here easily if called from constructor. 
+            // It will naturally sync up next time user adds something or we can try best effort.
+            if (this.isCloudEnabled && FirebaseService.isReady()) {
+                requiredUsers.forEach(u => {
+                    // Only add if we just added it locally (simple logic check) or just upsert safe
+                    FirebaseService.set('users', u.id, u).catch(console.error);
+                });
+            }
         }
     }
 
@@ -182,6 +206,9 @@ class Store {
             this.state.mappings = mappings;
             this.saveToLocal('mappings', mappings);
         }
+
+        // Ensure critical users exist even after cloud overwrite
+        this.ensureCriticalUsers();
     }
 
     async uploadAllToCloud() {

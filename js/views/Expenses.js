@@ -354,8 +354,26 @@ export class ExpensesView {
                                 }
                             }
 
+                            // DATE PARSING (Taiwan E-Invoice)
+                            // Chars 10-17: YYQMmDd (ROC Year)
+                            let invoiceDate = null;
+                            if (decodedText.length >= 17) {
+                                const dateStr = decodedText.substring(10, 17);
+                                if (/^\d{7}$/.test(dateStr)) {
+                                    const rocYear = parseInt(dateStr.substring(0, 3));
+                                    const month = dateStr.substring(3, 5);
+                                    const day = dateStr.substring(5, 7);
+
+                                    // Validate basic date range
+                                    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                                        const year = rocYear + 1911;
+                                        invoiceDate = `${year}-${month}-${day}`;
+                                    }
+                                }
+                            }
+
                             // Debug info
-                            let debugHex = `Total:${totalAmountHex}, Sales:${salesAmountHex}, UBN:${sellerId}`;
+                            let debugHex = `Total:${totalAmountHex}, Sales:${salesAmountHex}, UBN:${sellerId}, Date:${invoiceDate}`;
 
                             // Safe Set Helpers
                             const safeSet = (name, val) => {
@@ -367,6 +385,7 @@ export class ExpensesView {
 
                             safeSet('merchant', merchantName);
                             safeSet('amount', amount);
+                            if (invoiceDate) safeSet('date', invoiceDate); // Set Date if parsed
                             safeSet('notes', `Raw: ${decodedText.substring(0, 40)}... [${debugHex}]`);
                             safeSet('category', store.autoCategorize(merchantName));
 

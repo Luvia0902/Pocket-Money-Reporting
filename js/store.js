@@ -231,8 +231,24 @@ class Store {
         localStorage.setItem(`money_${key}`, JSON.stringify(value));
     }
 
+    // Auto-learn new categories
+    async checkAndLearn(merchant, category) {
+        if (!merchant || !category || category === '其他') return;
+
+        // Check if existing logic already covers it
+        const currentGuess = this.autoCategorize(merchant);
+        if (currentGuess !== category) {
+            // New knowledge! Learn it.
+            console.log(`[Auto-Learn] Learning new rule: ${merchant} -> ${category}`);
+            await this.addMapping({ keyword: merchant, category });
+        }
+    }
+
     // Specialized Helpers
     async addExpense(expense) {
+        // Learn before adding
+        await this.checkAndLearn(expense.merchant, expense.category);
+
         const list = this.get('expenses');
         const newExpense = { status: 'pending', ...expense, id: Date.now().toString() };
         list.unshift(newExpense); // Add to top
@@ -248,7 +264,15 @@ class Store {
         const list = this.get('expenses');
         const index = list.findIndex(e => e.id === id);
         if (index !== -1) {
-            const updated = { ...list[index], ...updates };
+            const original = list[index];
+            const updated = { ...original, ...updates };
+
+            // Learn from updates
+            // Use updated values, fallback to original if not present in updates
+            const finalMerchant = updates.merchant !== undefined ? updates.merchant : original.merchant;
+            const finalCategory = updates.category !== undefined ? updates.category : original.category;
+            await this.checkAndLearn(finalMerchant, finalCategory);
+
             list[index] = updated;
             this.set('expenses', list);
 

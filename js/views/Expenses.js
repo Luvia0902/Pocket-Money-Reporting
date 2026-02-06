@@ -268,9 +268,10 @@ export class ExpensesView {
                             // Parse Taiwan E-Invoice (Left QR Code usually)
                             // Format reference: 10(ID) + 7(Date) + 4(Random) + 8(Amount in Hex)
                             // Validations
+                            // Validations
                             if (decodedText.startsWith("**")) {
-                                alert("您掃描到的是「發票明細」(右側 QR Code)。\n請掃描位於「左側」的發票字軌 QR Code，通常包含日期與金額資訊。");
-                                return; // Skip processing
+                                console.log("Ignored Right QR Code (Details)");
+                                return; // Skip processing, keep scanning
                             }
 
                             let amount = "";

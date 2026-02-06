@@ -6,6 +6,7 @@ export class ExpensesView {
     constructor() {
         this.user = store.getCurrentUser();
         this.html5QrcodeScanner = null;
+        this.editingId = null;
     }
 
     render() {
@@ -125,6 +126,9 @@ export class ExpensesView {
                                 <div class="t-amount">${formatCurrency(e.amount)}</div>
                                 ${e.status === 'pending' ?
                             `<div class="flex gap-1">
+                                        <button class="btn btn-outline btn-edit" data-id="${e.id}" style="padding:0.25rem 0.6rem; font-size:0.75rem; border-radius:var(--radius-full); color:var(--text-secondary); border-color:var(--border);">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
                                         <button class="btn btn-outline btn-delete" data-id="${e.id}" style="padding:0.25rem 0.6rem; font-size:0.75rem; border-radius:var(--radius-full); color:var(--text-secondary); border-color:var(--border);">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
@@ -195,24 +199,41 @@ export class ExpensesView {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const formData = new FormData(form);
-            const expense = {
-                date: formData.get('date'),
-                merchant: formData.get('merchant'),
-                amount: formData.get('amount'),
-                category: formData.get('category'),
-                notes: formData.get('notes'),
-                employeeId: formData.get('target_employee') || this.user.id
-            };
-            store.addExpense(expense);
 
-            // If added for someone else, show special message
-            const targetId = formData.get('target_employee');
-            if (targetId && targetId !== this.user.id) {
-                const targetName = store.get('users').find(u => u.id === targetId)?.name;
-                alert(`已成功幫 ${targetName} 新增一筆報帳！`);
+            if (this.editingId) {
+                // Update Mode
+                store.updateExpense(this.editingId, {
+                    date: formData.get('date'),
+                    merchant: formData.get('merchant'),
+                    amount: formData.get('amount'),
+                    category: formData.get('category'),
+                    notes: formData.get('notes'),
+                    employeeId: formData.get('target_employee') || this.user.id
+                });
+                alert('報帳更新成功！');
+                this.editingId = null;
             } else {
-                alert('報帳成功！');
+                // Create Mode
+                const expense = {
+                    date: formData.get('date'),
+                    merchant: formData.get('merchant'),
+                    amount: formData.get('amount'),
+                    category: formData.get('category'),
+                    notes: formData.get('notes'),
+                    employeeId: formData.get('target_employee') || this.user.id
+                };
+                store.addExpense(expense);
+
+                // If added for someone else, show special message
+                const targetId = formData.get('target_employee');
+                if (targetId && targetId !== this.user.id) {
+                    const targetName = store.get('users').find(u => u.id === targetId)?.name;
+                    alert(`已成功幫 ${targetName} 新增一筆報帳！`);
+                } else {
+                    alert('報帳成功！');
+                }
             }
+
             form.reset();
             form.classList.add('hidden');
             window.location.reload(); // Simple refresh for state update
@@ -237,6 +258,40 @@ export class ExpensesView {
                     store.deleteExpense(id);
                     // Simple refresh for state update
                     window.location.reload();
+                }
+            });
+        });
+
+        // Edit Logic
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                const expense = store.get('expenses').find(e => e.id === id);
+                if (expense) {
+                    this.editingId = id;
+
+                    // Show Form
+                    scannerContainer.classList.add('hidden');
+                    form.classList.remove('hidden');
+
+                    // Populate Fields
+                    form.querySelector('[name="date"]').value = expense.date;
+                    form.querySelector('[name="merchant"]').value = expense.merchant;
+                    form.querySelector('[name="amount"]').value = expense.amount;
+                    form.querySelector('[name="category"]').value = expense.category;
+                    form.querySelector('[name="notes"]').value = expense.notes || '';
+                    if (form.querySelector('[name="target_employee"]')) {
+                        form.querySelector('[name="target_employee"]').value = expense.employeeId;
+                    }
+
+                    // Update UI State
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '<i class="fas fa-save" style="margin-right:5px;"></i> 更新報帳';
+                    submitBtn.classList.remove('btn-primary');
+                    submitBtn.style.backgroundColor = 'var(--text-secondary)'; // Distinct color
+
+                    // Scroll to form
+                    form.scrollIntoView({ behavior: 'smooth' });
                 }
             });
         });

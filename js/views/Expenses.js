@@ -104,11 +104,16 @@ export class ExpensesView {
             </div>
 
             <div class="card fade-in-up stagger-2">
-                <h3 style="font-family:var(--font-heading); font-size:1.2rem; margin-bottom:1rem;">報帳記錄</h3>
+                <h3 style="font-family:var(--font-heading); font-size:1.2rem; margin-bottom:1rem;">
+                    報帳記錄 <span style="font-size:0.9rem; color:var(--text-secondary); font-weight:normal;">(共 ${expenses.length} 筆)</span>
+                </h3>
                 <div class="transaction-list">
                     ${expenses.length === 0 ? '<div style="text-align:center; padding:2rem; color:var(--text-muted);"><i class="fas fa-receipt" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>尚無紀錄</div>' : ''}
                     ${expenses.map((e, index) => `
                         <div class="transaction-item fade-in-up" style="animation-delay: ${index * 0.05}s">
+                            <div style="font-family:monospace; color:var(--text-secondary); font-size:0.8rem; margin-right:0.8rem; min-width:20px;">
+                                #${index + 1}
+                            </div>
                             <div class="t-icon">
                                 <i class="fas ${getIconForCategory(e.category)}"></i>
                             </div>

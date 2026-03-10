@@ -1,5 +1,5 @@
 
-import { store } from '../store.js?v=3.52';
+import { store } from '../store.js?v=3.54';
 import { formatCurrency, formatDate } from '../utils.js';
 
 export class ExpensesView {
@@ -311,168 +311,210 @@ export class ExpensesView {
                 this.html5QrcodeScanner = new Html5Qrcode("reader");
             }
 
-            // Improved Scan Config for better focus
-            const config = {
-                fps: 15, // Higher FPS for responsive focus
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
-                videoConstraints: {
-                    facingMode: "environment",
-                    width: { min: 640, ideal: 1280, max: 1920 },
-                    height: { min: 480, ideal: 720, max: 1080 }
-                }
-            };
+            // Improved camera start logic
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    let cameraId = devices[0].id; // Default to first
 
-            this.html5QrcodeScanner.start(
-                { facingMode: "environment" },
-                config,
-                (decodedText, decodedResult) => {
-                    // Success
-                    console.log(`Scan matched: ${decodedText} `);
+                    if (devices.length > 1) {
+                        // Samsung Workaround: Try to find a standard back camera, avoiding macro/ultrawide
+                        const backCameras = devices.filter(d =>
+                            d.label.toLowerCase().includes('back') ||
+                            d.label.toLowerCase().includes('rear') ||
+                            d.label.toLowerCase().includes('environment')
+                        );
 
-                    // Parse Taiwan E-Invoice (Left QR Code usually)
-                    // Format reference: 10(ID) + 7(Date) + 4(Random) + 8(Amount in Hex)
-                    // Validations
-                    // Validations
-                    if (decodedText.startsWith("**")) {
-                        console.log("Ignored Right QR Code (Details)");
-                        return; // Skip processing, keep scanning
-                    }
+                        if (backCameras.length > 0) {
+                            // Find one that doesn't explicitly say macro or ultrawide
+                            const standardBack = backCameras.find(d =>
+                                !d.label.toLowerCase().includes('macro') &&
+                                !d.label.toLowerCase().includes('ultrawide') &&
+                                !d.label.toLowerCase().includes('depth')
+                            );
 
-                    let amount = "";
-                    let merchantName = "掃描發票 (" + decodedText.substring(0, 5) + ")";
-
-                    let totalAmountHex = "";
-                    let salesAmountHex = "";
-                    let sellerId = "";
-
-                    const knownMerchants = {
-                        // Utility & Government
-                        "20828693": "台灣中油",
-
-                        // Convenience Stores
-                        "22555003": "7-ELEVEN",
-                        "28984895": "7-ELEVEN", // Additional UBN
-                        "23060248": "全家便利商店",
-                        "23285582": "萊爾富 Hi-Life",
-                        "24556801": "萊爾富", // Legacy
-                        "22853565": "OK超商",
-                        "23222509": "美廉社",
-
-                        // Supermarkets / Malls
-                        "16740494": "全聯福利中心",
-                        "22662550": "家樂福 Carrefour",
-                        "03795556": "家樂福", // Legacy
-                        "96972798": "好市多 Costco",
-
-                        // Food & Drink
-                        "12411160": "麥當勞 McDonald's",
-                        "97161500": "KFC/必勝客", // Both use same UBN (Richfood)
-                        "23928945": "摩斯漢堡 MOS",
-                        "16097091": "星巴克 Starbucks",
-                        "54857699": "路易莎 Louisa",
-
-                        // Retail / Lifestyle
-                        "23224657": "屈臣氏 Watsons",
-                        "89957386": "康是美",
-                        "97151664": "寶雅 POYA",
-                        "80518858": "無印良品 MUJI",
-                        "28965825": "UNIQLO",
-                        "23117530": "IKEA",
-
-                        // Online
-                        "83118125": "Uber Eats",
-                        "53926705": "Foodpanda",
-                        "56801904": "蝦皮購物",
-                        "27365925": "MOMO",
-                        "80136913": "PChome"
-                    };
-
-                    // Basic length check for standard E-Invoice (77 chars)
-                    if (decodedText.length >= 29) {
-                        try {
-                            // Characters 29-37 are the Total Amount (Tax Included) in Hex
-                            if (decodedText.length >= 37) {
-                                totalAmountHex = decodedText.substring(29, 37);
-                                const parsedTotal = parseInt(totalAmountHex, 16);
-                                if (!isNaN(parsedTotal) && parsedTotal > 0) {
-                                    amount = parsedTotal;
-                                }
+                            if (standardBack) {
+                                cameraId = standardBack.id;
+                                console.log("[Scanner] Selected standard rear camera:", standardBack.label);
+                            } else {
+                                // If all say macro/wide, just pick the first back one (usually the main one)
+                                cameraId = backCameras[0].id;
+                                console.log("[Scanner] Selected first rear camera:", backCameras[0].label);
                             }
-
-                            // Fallback: Characters 21-29 are the Sales Amount (Tax Excluded) in Hex
-                            salesAmountHex = decodedText.substring(21, 29);
-                            const parsedSales = parseInt(salesAmountHex, 16);
-
-                            if (amount === "" && !isNaN(parsedSales)) {
-                                amount = parsedSales;
-                            }
-
-                            // Characters 45-53 are the Seller ID (UBN)
-                            if (decodedText.length >= 53) {
-                                sellerId = decodedText.substring(45, 53);
-                                if (knownMerchants[sellerId]) {
-                                    merchantName = knownMerchants[sellerId];
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Parse error:", e);
                         }
                     }
 
-                    // DATE PARSING (Taiwan E-Invoice)
-                    // Chars 10-17: YYQMmDd (ROC Year)
-                    let invoiceDate = null;
-                    if (decodedText.length >= 17) {
-                        const datePart = decodedText.substring(10, 17);
-                        if (/^\d{7}$/.test(datePart)) {
-                            try {
-                                const rocYear = parseInt(datePart.substring(0, 3));
-                                const month = datePart.substring(3, 5);
-                                const day = datePart.substring(5, 7);
-
-                                const m = parseInt(month);
-                                const d = parseInt(day);
-
-                                if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
-                                    const year = rocYear + 1911;
-                                    invoiceDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                                }
-                            } catch (e) { }
+                    // Improved Scan Config for better focus
+                    const config = {
+                        fps: 15, // Higher FPS for responsive focus
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0,
+                        videoConstraints: {
+                            width: { min: 640, ideal: 1280, max: 1920 },
+                            height: { min: 480, ideal: 720, max: 1080 }
                         }
-                    }
-
-                    // Debug info
-                    let debugHex = `Amt:${amount}, UBN:${sellerId}, Date:${invoiceDate}`;
-
-                    // Safe Set Helpers
-                    const safeSet = (name, val) => {
-                        // Try input first, then select
-                        let el = document.querySelector(`input[name="${name}"]`);
-                        if (!el) el = document.querySelector(`select[name="${name}"]`);
-                        if (el && val !== undefined && val !== null) el.value = val;
                     };
 
-                    safeSet('merchant', merchantName);
-                    safeSet('amount', amount);
-                    if (invoiceDate) safeSet('date', invoiceDate); // Set Date if parsed
-                    safeSet('notes', `Raw: ${decodedText.substring(0, 40)}... [${debugHex}]`);
-                    safeSet('category', store.autoCategorize(merchantName));
+                    this.html5QrcodeScanner.start(
+                        cameraId, // Use specific ID instead of facingMode for precise control
+                        config,
+                        (decodedText, decodedResult) => {
+                            // Success
+                            console.log(`Scan matched: ${decodedText} `);
 
-                    // Auto stop after scan
-                    this.html5QrcodeScanner.stop().then(() => {
-                        scannerContainer.classList.add('hidden');
+                            // Parse Taiwan E-Invoice (Left QR Code usually)
+                            // Format reference: 10(ID) + 7(Date) + 4(Random) + 8(Amount in Hex)
+                            // Validations
+                            // Validations
+                            if (decodedText.startsWith("**")) {
+                                console.log("Ignored Right QR Code (Details)");
+                                return; // Skip processing, keep scanning
+                            }
+
+                            let amount = "";
+                            let merchantName = "掃描發票 (" + decodedText.substring(0, 5) + ")";
+
+                            let totalAmountHex = "";
+                            let salesAmountHex = "";
+                            let sellerId = "";
+
+                            const knownMerchants = {
+                                // Utility & Government
+                                "20828693": "台灣中油",
+
+                                // Convenience Stores
+                                "22555003": "7-ELEVEN",
+                                "28984895": "7-ELEVEN", // Additional UBN
+                                "23060248": "全家便利商店",
+                                "23285582": "萊爾富 Hi-Life",
+                                "24556801": "萊爾富", // Legacy
+                                "22853565": "OK超商",
+                                "23222509": "美廉社",
+
+                                // Supermarkets / Malls
+                                "16740494": "全聯福利中心",
+                                "22662550": "家樂福 Carrefour",
+                                "03795556": "家樂福", // Legacy
+                                "96972798": "好市多 Costco",
+
+                                // Food & Drink
+                                "12411160": "麥當勞 McDonald's",
+                                "97161500": "KFC/必勝客", // Both use same UBN (Richfood)
+                                "23928945": "摩斯漢堡 MOS",
+                                "16097091": "星巴克 Starbucks",
+                                "54857699": "路易莎 Louisa",
+
+                                // Retail / Lifestyle
+                                "23224657": "屈臣氏 Watsons",
+                                "89957386": "康是美",
+                                "97151664": "寶雅 POYA",
+                                "80518858": "無印良品 MUJI",
+                                "28965825": "UNIQLO",
+                                "23117530": "IKEA",
+
+                                // Online
+                                "83118125": "Uber Eats",
+                                "53926705": "Foodpanda",
+                                "56801904": "蝦皮購物",
+                                "27365925": "MOMO",
+                                "80136913": "PChome"
+                            };
+
+                            // Basic length check for standard E-Invoice (77 chars)
+                            if (decodedText.length >= 29) {
+                                try {
+                                    // Characters 29-37 are the Total Amount (Tax Included) in Hex
+                                    if (decodedText.length >= 37) {
+                                        totalAmountHex = decodedText.substring(29, 37);
+                                        const parsedTotal = parseInt(totalAmountHex, 16);
+                                        if (!isNaN(parsedTotal) && parsedTotal > 0) {
+                                            amount = parsedTotal;
+                                        }
+                                    }
+
+                                    // Fallback: Characters 21-29 are the Sales Amount (Tax Excluded) in Hex
+                                    salesAmountHex = decodedText.substring(21, 29);
+                                    const parsedSales = parseInt(salesAmountHex, 16);
+
+                                    if (amount === "" && !isNaN(parsedSales)) {
+                                        amount = parsedSales;
+                                    }
+
+                                    // Characters 45-53 are the Seller ID (UBN)
+                                    if (decodedText.length >= 53) {
+                                        sellerId = decodedText.substring(45, 53);
+                                        if (knownMerchants[sellerId]) {
+                                            merchantName = knownMerchants[sellerId];
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn("Parse error:", e);
+                                }
+                            }
+
+                            // DATE PARSING (Taiwan E-Invoice)
+                            // Chars 10-17: YYQMmDd (ROC Year)
+                            let invoiceDate = null;
+                            if (decodedText.length >= 17) {
+                                const datePart = decodedText.substring(10, 17);
+                                if (/^\d{7}$/.test(datePart)) {
+                                    try {
+                                        const rocYear = parseInt(datePart.substring(0, 3));
+                                        const month = datePart.substring(3, 5);
+                                        const day = datePart.substring(5, 7);
+
+                                        const m = parseInt(month);
+                                        const d = parseInt(day);
+
+                                        if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+                                            const year = rocYear + 1911;
+                                            invoiceDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                                        }
+                                    } catch (e) { }
+                                }
+                            }
+
+                            // Debug info
+                            let debugHex = `Amt:${amount}, UBN:${sellerId}, Date:${invoiceDate}`;
+
+                            // Safe Set Helpers
+                            const safeSet = (name, val) => {
+                                // Try input first, then select
+                                let el = document.querySelector(`input[name="${name}"]`);
+                                if (!el) el = document.querySelector(`select[name="${name}"]`);
+                                if (el && val !== undefined && val !== null) el.value = val;
+                            };
+
+                            safeSet('merchant', merchantName);
+                            safeSet('amount', amount);
+                            if (invoiceDate) safeSet('date', invoiceDate); // Set Date if parsed
+                            safeSet('notes', `Raw: ${decodedText.substring(0, 40)}... [${debugHex}]`);
+                            safeSet('category', store.autoCategorize(merchantName));
+
+                            // Auto stop after scan
+                            this.html5QrcodeScanner.stop().then(() => {
+                                scannerContainer.classList.add('hidden');
+                            });
+                        },
+                        (errorMessage) => {
+                            // parse error, ignore
+                        }
+                    ).catch(err => {
+                        console.error("Error starting scanner:", err);
+                        if (err.name === 'NotAllowedError' || err.toString().includes('not allowed')) {
+                            alert("無法啟動相機：請檢查瀏覽器權限。\n\n⚠️ 若您正在使用 LINE 開啟，請點擊右上角選單，選擇「使用預設瀏覽器開啟」以取得完整相機權限。");
+                        } else {
+                            alert("無法啟動相機：" + err);
+                        }
                     });
-                },
-                (errorMessage) => {
-                    // parse error, ignore
-                }
-            ).catch(err => {
-                console.error("Error starting scanner:", err);
-                if (err.name === 'NotAllowedError' || err.toString().includes('not allowed')) {
-                    alert("無法啟動相機：請檢查瀏覽器權限。\n\n⚠️ 若您正在使用 LINE 開啟，請點擊右上角選單，選擇「使用預設瀏覽器開啟」以取得完整相機權限。");
                 } else {
-                    alert("無法啟動相機：" + err);
+                    alert("找不到相機裝置！请確認您的裝置有相機功能。");
+                }
+            }).catch(err => {
+                console.error("Error getting cameras:", err);
+                if (err.name === 'NotAllowedError' || err.toString().includes('not allowed')) {
+                    alert("無法取得相機權限。\n\n⚠️ 若您正在使用 LINE 開啟，請點擊右上角選單，選擇「使用預設瀏覽器開啟」。");
+                } else {
+                    alert("無法偵測相機：" + err);
                 }
             });
         });

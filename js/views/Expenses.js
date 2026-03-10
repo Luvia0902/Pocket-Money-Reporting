@@ -119,7 +119,12 @@ export class ExpensesView {
                                 <i class="fas ${getIconForCategory(e.category)}"></i>
                             </div>
                             <div class="t-info">
-                                <h4>${e.merchant}</h4>
+                                <h4>
+                                    ${e.merchant}
+                                    ${e._synced === false ?
+                            `<i class="fas fa-cloud-upload-alt" style="color:var(--warning); margin-left:5px;" title="待同步至雲端 (資料已保存於本機)"></i>` :
+                            ``}
+                                </h4>
                                 <div class="t-date">${formatDate(e.date)} · ${e.category}</div>
                             </div>
                             <div class="text-right" style="display:flex; flex-direction:column; align-items:flex-end; gap:0.3rem;">
@@ -143,6 +148,7 @@ export class ExpensesView {
                     `).join('')}
                 </div>
             </div>
+
         `;
     }
 

@@ -9,7 +9,8 @@ const DEFAULTS = {
         { id: 'u1', name: 'Admin User', email: 'admin@company.com', role: 'admin' },
         { id: 'u3', name: 'Super Admin', email: 'admin@gmail.com', role: 'admin' },
         { id: 'u4', name: 'Assistant User', email: 'assistant@company.com', role: 'assistant' },
-        { id: 'u2', name: 'John Doe', email: 'john@company.com', role: 'employee' }
+        { id: 'u2', name: 'John Doe', email: 'john@company.com', role: 'employee' },
+        { id: 'u5', name: 'Dejau Luna', email: 'dejau.luna@gmail.com', role: 'admin' }
     ],
     mappings: [
         // 交通費
@@ -104,7 +105,8 @@ class Store {
     ensureCriticalUsers() {
         const requiredUsers = [
             { id: 'u3', name: 'Super Admin', email: 'admin@gmail.com', role: 'admin' },
-            { id: 'u_dejau', name: 'Dejau Chu', email: 'dejau.chu@gmail.com', role: 'admin' }
+            { id: 'u_dejau', name: 'Dejau Chu', email: 'dejau.chu@gmail.com', role: 'admin' },
+            { id: 'u_luna', name: 'Dejau Luna', email: 'dejau.luna@gmail.com', role: 'admin' }
         ];
 
         let changed = false;
@@ -181,34 +183,124 @@ class Store {
 
     async syncFromCloud() {
         console.log("Syncing from Cloud...");
-        const users = await FirebaseService.getAll('users');
-        const expenses = await FirebaseService.getAll('expenses');
-        const mappings = await FirebaseService.getAll('mappings');
+        const cloudUsers = await FirebaseService.getAll('users');
+        const cloudExpenses = await FirebaseService.getAll('expenses');
+        const cloudMappings = await FirebaseService.getAll('mappings');
 
-        // Simple strategy: Cloud > Local (Overwrite local with cloud)
-        if (users.length > 0) {
-            this.state.users = users;
-            this.saveToLocal('users', users);
-        } else {
-            // First time cloud sync? Upload local to cloud?
-            // For safety, let's upload defaults if cloud is empty
+        // Merge Strategy: Cloud Wins, BUT Local Unsynced Wins over Cloud
+
+        // 1. Users
+        const localUsers = this.get('users');
+        const mergedUsers = this._mergeData(localUsers, cloudUsers);
+        this.set('users', mergedUsers);
+
+        if (mergedUsers.length === 0 && cloudUsers.length === 0) {
+            // First time cloud sync? Upload local defaults if any?
+            // Actually _mergeData handles local retention. 
+            // If completely empty, maybe ask to upload default admin?
             if (confirm("雲端資料庫似乎是空的。是否上傳目前的本機資料？")) {
                 await this.uploadAllToCloud();
             }
         }
 
-        if (expenses.length > 0) {
-            this.state.expenses = expenses;
-            this.saveToLocal('expenses', expenses);
-        }
+        // 2. Expenses
+        const localExpenses = this.get('expenses');
+        const mergedExpenses = this._mergeData(localExpenses, cloudExpenses);
+        this.set('expenses', mergedExpenses);
 
-        if (mappings.length > 0) {
-            this.state.mappings = mappings;
-            this.saveToLocal('mappings', mappings);
-        }
+        // 3. Mappings (No IDs usually, difficult to merge without dupes. 
+        // Strategy: Union by keyword)
+        const localMappings = this.get('mappings');
+        const mergedMappings = this._mergeMappings(localMappings, cloudMappings);
+        this.set('mappings', mergedMappings);
 
-        // Ensure critical users exist even after cloud overwrite
+        // Ensure critical users exist even after sync
         this.ensureCriticalUsers();
+
+        // Post-Sync: Try to upload any unsynced items
+        this._uploadUnsyncedItems();
+    }
+
+    _mergeData(localList, cloudList) {
+        const cloudMap = new Map(cloudList.map(i => [i.id, i]));
+        const merged = [];
+        const seenIds = new Set();
+
+        // 1. Process Local Items
+        for (const localItem of localList) {
+            seenIds.add(localItem.id);
+            if (localItem._synced === false) {
+                // Keep Local Unsynced version (it's newer/pending)
+                merged.push(localItem);
+            } else {
+                // If synced, check if Cloud has newer execution? 
+                // For simplicity, if local says synced, valid cloud version wins (if exists), 
+                // formatted as: Use Cloud version if exists, else keep local (might be deleted in cloud? logic complex)
+                // Simplest robust: If strictly synced, Cloud overrides.
+                if (cloudMap.has(localItem.id)) {
+                    merged.push(cloudMap.get(localItem.id));
+                } else {
+                    // Exists locally (marked synced) but NOT in cloud.
+                    // Means it was deleted in cloud? Or we are stale?
+                    // Safe bet: Keep it but maybe mark it? Or trust cloud deletion?
+                    // Let's trust Cloud deletion for 'synced' items.
+                    // BUT: If user just added it and _synced=true hasn't persisted yet? 
+                    // Unlikely if we code correctly.
+                }
+            }
+        }
+
+        // 2. Process Cloud Items (New ones from other devices)
+        for (const cloudItem of cloudList) {
+            if (!seenIds.has(cloudItem.id)) {
+                merged.push(cloudItem);
+            }
+        }
+
+        // Sort by date/created?
+        // Expenses usually sorted by date desc
+        return merged.sort((a, b) => {
+            // Try date comparison
+            if (a.date && b.date) return new Date(b.date) - new Date(a.date);
+            return 0;
+        });
+    }
+
+    _mergeMappings(local, cloud) {
+        const map = new Map();
+        [...local, ...cloud].forEach(m => {
+            // key is keyword
+            map.set(m.keyword, m);
+        });
+        return Array.from(map.values());
+    }
+
+    async _uploadUnsyncedItems() {
+        const pushItem = async (collection, item) => {
+            try {
+                // Remove _synced flag before upload? Or keep it? 
+                // Firebase doesn't care, but cleaner to remove.
+                const { _synced, ...dataToUpload } = item;
+                await FirebaseService.set(collection, item.id, dataToUpload);
+
+                // Update local state to synced
+                const list = this.get(collection);
+                const idx = list.findIndex(i => i.id === item.id);
+                if (idx !== -1) {
+                    list[idx]._synced = true;
+                    this.set(collection, list);
+                }
+                console.log(`[Sync] Uploaded ${collection}/${item.id}`);
+            } catch (e) {
+                console.error(`[Sync] Failed to upload ${collection}/${item.id}`, e);
+            }
+        };
+
+        const users = this.get('users').filter(u => u._synced === false);
+        for (const u of users) await pushItem('users', u);
+
+        const expenses = this.get('expenses').filter(e => e._synced === false);
+        for (const e of expenses) await pushItem('expenses', e);
     }
 
     async uploadAllToCloud() {
@@ -250,12 +342,21 @@ class Store {
         await this.checkAndLearn(expense.merchant, expense.category);
 
         const list = this.get('expenses');
-        const newExpense = { status: 'pending', ...expense, id: Date.now().toString() };
+        // Mark as unsynced initially
+        const newExpense = { status: 'pending', ...expense, id: Date.now().toString(), _synced: false };
         list.unshift(newExpense); // Add to top
         this.set('expenses', list);
 
         if (this.isCloudEnabled) {
-            await FirebaseService.set('expenses', newExpense.id, newExpense);
+            try {
+                const { _synced, ...dataToUpload } = newExpense;
+                await FirebaseService.set('expenses', newExpense.id, dataToUpload);
+                // Mark synced on success
+                newExpense._synced = true;
+                this.set('expenses', list); // Trigger save
+            } catch (e) {
+                console.warn("Upload failed, stored locally as unsynced", e);
+            }
         }
         return newExpense;
     }
@@ -265,7 +366,7 @@ class Store {
         const index = list.findIndex(e => e.id === id);
         if (index !== -1) {
             const original = list[index];
-            const updated = { ...original, ...updates };
+            const updated = { ...original, ...updates, _synced: false }; // Mark unsynced
 
             // Learn from updates
             // Use updated values, fallback to original if not present in updates
@@ -277,7 +378,15 @@ class Store {
             this.set('expenses', list);
 
             if (this.isCloudEnabled) {
-                await FirebaseService.set('expenses', id, updated);
+                try {
+                    const { _synced, ...dataToUpload } = updated;
+                    await FirebaseService.set('expenses', id, dataToUpload);
+                    // Mark synced on success
+                    updated._synced = true;
+                    this.set('expenses', list);
+                } catch (e) {
+                    console.warn("Update upload failed, kept as unsynced", e);
+                }
             }
         }
     }
@@ -315,12 +424,19 @@ class Store {
     async addUser(user) {
         const list = this.get('users');
         const id = user.id || ('u' + Date.now());
-        const newUser = { ...user, id };
+        const newUser = { ...user, id, _synced: false };
         list.push(newUser);
         this.set('users', list);
 
         if (this.isCloudEnabled) {
-            await FirebaseService.set('users', id, newUser);
+            try {
+                const { _synced, ...dataToUpload } = newUser;
+                await FirebaseService.set('users', id, dataToUpload);
+                newUser._synced = true;
+                this.set('users', list);
+            } catch (e) {
+                console.warn("User upload failed", e);
+            }
         }
     }
 

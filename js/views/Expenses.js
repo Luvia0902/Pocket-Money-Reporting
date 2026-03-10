@@ -1,5 +1,5 @@
 
-import { store } from '../store.js';
+import { store } from '../store.js?v=3.50';
 import { formatCurrency, formatDate } from '../utils.js';
 
 export class ExpensesView {
@@ -58,7 +58,7 @@ export class ExpensesView {
                 
                 <div id="scanner-container" class="hidden mb-4" style="background:black; border-radius:var(--radius-md); padding:1rem;">
                     <div id="reader"></div>
-                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.37</div>
+                    <div style="text-align:center; color:#aaa; font-size:12px; margin-top:5px; font-family:monospace;">Scanner System v3.50</div>
                     <button id="stop-scan" class="btn btn-outline" style="margin-top:1rem; width:100%; color:white; border-color:white;">停止掃描</button>
                 </div>
 
@@ -425,22 +425,26 @@ export class ExpensesView {
                             // Chars 10-17: YYQMmDd (ROC Year)
                             let invoiceDate = null;
                             if (decodedText.length >= 17) {
-                                const dateStr = decodedText.substring(10, 17);
-                                if (/^\d{7}$/.test(dateStr)) {
-                                    const rocYear = parseInt(dateStr.substring(0, 3));
-                                    const month = dateStr.substring(3, 5);
-                                    const day = dateStr.substring(5, 7);
+                                const datePart = decodedText.substring(10, 17);
+                                if (/^\d{7}$/.test(datePart)) {
+                                    try {
+                                        const rocYear = parseInt(datePart.substring(0, 3));
+                                        const month = datePart.substring(3, 5);
+                                        const day = datePart.substring(5, 7);
 
-                                    // Validate basic date range
-                                    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                                        const year = rocYear + 1911;
-                                        invoiceDate = `${year}-${month}-${day}`;
-                                    }
+                                        const m = parseInt(month);
+                                        const d = parseInt(day);
+
+                                        if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+                                            const year = rocYear + 1911;
+                                            invoiceDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                                        }
+                                    } catch (e) { }
                                 }
                             }
 
                             // Debug info
-                            let debugHex = `Total:${totalAmountHex}, Sales:${salesAmountHex}, UBN:${sellerId}, Date:${invoiceDate}`;
+                            let debugHex = `Amt:${amount}, UBN:${sellerId}, Date:${invoiceDate}`;
 
                             // Safe Set Helpers
                             const safeSet = (name, val) => {

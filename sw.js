@@ -1,16 +1,16 @@
-const CACHE_NAME = 'zeromoney-v3.37';
+const CACHE_NAME = 'zeromoney-v3.50';
 const ASSETS = [
     './',
     './index.html',
     './css/style.css',
-    './js/app.js?v=3.37',
-    './js/store.js?v=3.37',
+    './js/app.js?v=3.50',
+    './js/store.js?v=3.50',
     './js/utils.js',
     './js/firebase-service.js',
-    './js/views/Expenses.js?v=3.37',
-    './js/views/Admin.js?v=3.37',
-    './js/views/Login.js?v=3.37',
-    './js/views/Settings.js?v=3.37',
+    './js/views/Expenses.js?v=3.50',
+    './js/views/Admin.js?v=3.50',
+    './js/views/Login.js?v=3.50',
+    './js/views/Settings.js?v=3.50',
     './manifest.json',
     './icon.png',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
@@ -35,7 +35,8 @@ self.addEventListener('activate', event => {
         caches.keys().then(keys => {
             return Promise.all(keys.map(key => {
                 if (key !== CACHE_NAME) {
-                    // Scanner System v3.37
+                    // Force cache clearing for older versions
+                    console.log('[SW] Clearing old cache:', key);
                     return caches.delete(key);
                 }
             }));
